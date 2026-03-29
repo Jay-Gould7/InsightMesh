@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum BountyStatus {
+  PENDING_FUNDING
+  ACTIVE
+  ANALYZING
+  READY_TO_SETTLE
+  SETTLED
+  CANCELLED
+}
+
+enum AnalysisStatus {
+  IDLE
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model Bounty {
+  id                   Int            @id @default(autoincrement())
+  chainBountyId        Int?           @unique
+  creatorCoreAddress   String
+  creatorEspaceAddress String
+  title                String
+  description          String
+  prompt               String
+  metadataHash         String?
+  rewardToken          String         @default("USDT0")
+  rewardAmount         String
+  deadline             DateTime
+  status               BountyStatus   @default(PENDING_FUNDING)
+  analysisStatus       AnalysisStatus @default(IDLE)
+  questions            String
+  vaultDepositTx       String?
+  coreCreateTx         String?
+  settlementTx         String?
+  settledAt            DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  submissions          Submission[]
+  analysis             Analysis?
+  scoreSnapshot        ScoreSnapshot?
+}
+
+model Submission {
+  id                   Int        @id @default(autoincrement())
+  bountyId             Int
+  bounty               Bounty     @relation(fields: [bountyId], references: [id], onDelete: Cascade)
+  coreSubmissionId     Int?
+  submitterCoreAddress String
+  payoutAddress        String
+  contentHash          String
+  answers              String
+  summary              String?
+  supportCount         Int        @default(0)
+  coreTxHash           String?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  scoreEntry           ScoreEntry?
+  receivedSupports     Support[]  @relation("SubmissionSupports")
+
+  @@unique([bountyId, submitterCoreAddress])
+}
+
+model Support {
+  id                   Int        @id @default(autoincrement())
+  bountyId             Int
+  submissionId         Int
+  submission           Submission @relation("SubmissionSupports", fields: [submissionId], references: [id], onDelete: Cascade)
+  supporterCoreAddress String
+  createdAt            DateTime   @default(now())
+
+  @@unique([bountyId, submissionId, supporterCoreAddress])
+}
+
+model Analysis {
+  id             Int      @id @default(autoincrement())
+  bountyId       Int      @unique
+  bounty         Bounty   @relation(fields: [bountyId], references: [id], onDelete: Cascade)
+  clusters       String
+  duplicates     String
+  highlights     String
+  scoreBreakdown String
+  aiModel        String
+  snapshotKey    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ScoreSnapshot {
+  id               Int         @id @default(autoincrement())
+  bountyId         Int         @unique
+  bounty           Bounty      @relation(fields: [bountyId], references: [id], onDelete: Cascade)
+  snapshotKey      String      @unique
+  rewardPool       String
+  totalPoints      Int
+  creatorSignature String?
+  createdBy        String
+  createdAt        DateTime    @default(now())
+  entries          ScoreEntry[]
+}
+
+model ScoreEntry {
+  id               Int           @id @default(autoincrement())
+  snapshotId       Int
+  snapshot         ScoreSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  submissionId     Int           @unique
+  submission       Submission    @relation(fields: [submissionId], references: [id])
+  participationPts Int           @default(0)
+  qualityPts       Int           @default(0)
+  discoveryBonus   Int           @default(0)
+  consensusBonus   Int           @default(0)
+  totalPoints      Int           @default(0)
+  rewardAmount     String?
+  rank             Int?
+  settled          Boolean       @default(false)
+  createdAt        DateTime      @default(now())
+}
