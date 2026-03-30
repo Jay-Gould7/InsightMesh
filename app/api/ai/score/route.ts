@@ -3,16 +3,20 @@ import { buildScoreBreakdown } from "@/lib/ai/scorer";
 import { apiError } from "@/lib/api";
 import { getBountyDetail, markAnalyzing, saveAnalysis, saveScoreSnapshot } from "@/lib/db/queries";
 import { fakeSnapshotKey } from "@/lib/demo";
-import { bountyIdSchema } from "@/lib/validators";
+import { creatorActionSchema } from "@/lib/validators";
 
 export async function POST(request: Request) {
   try {
     const json = await request.json();
-    const payload = bountyIdSchema.parse(json);
+    const payload = creatorActionSchema.parse(json);
     const bounty = await getBountyDetail(payload.bountyId);
 
     if (!bounty) {
       return apiError("Bounty not found", 404);
+    }
+
+    if (payload.callerAddress.toLowerCase() !== bounty.creatorCoreAddress.toLowerCase()) {
+      return apiError("Only the bounty creator can freeze a score snapshot.", 403);
     }
 
     if (bounty.submissions.length === 0) {

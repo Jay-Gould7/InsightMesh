@@ -76,7 +76,7 @@ export function normalizeSurveyQuestion(question: SurveyQuestion): SurveyQuestio
 
   return {
     ...normalized,
-    options: (question.options ?? []).map((option) => option.trim()).filter(Boolean),
+    options: (question.options ?? []).map((option) => String(option ?? "").trim()).filter(Boolean),
     allowOther: question.allowOther ?? true,
   };
 }

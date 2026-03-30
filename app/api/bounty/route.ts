@@ -37,6 +37,7 @@ export async function POST(request: Request) {
       },
     }, { status: 201 });
   } catch (error) {
-    return apiError("Unable to create bounty", 400, error);
+    const zodIssues = error && typeof error === "object" && "issues" in error ? (error as any).issues : undefined;
+    return apiError(zodIssues ? `Validation failed: ${zodIssues.map((i: any) => `${i.path.join(".")} — ${i.message}`).join("; ")}` : "Unable to create bounty", 400, error);
   }
 }

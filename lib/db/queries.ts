@@ -59,7 +59,7 @@ export async function listVisibleBounties() {
   const bounties = await prisma.bounty.findMany({
     where: {
       status: {
-        in: [BountyStatus.ACTIVE, BountyStatus.ANALYZING, BountyStatus.READY_TO_SETTLE, BountyStatus.SETTLED],
+        in: [BountyStatus.PENDING_FUNDING, BountyStatus.ACTIVE, BountyStatus.ANALYZING, BountyStatus.READY_TO_SETTLE, BountyStatus.SETTLED],
       },
     },
     orderBy: { createdAt: "desc" },

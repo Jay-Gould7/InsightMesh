@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useRouter } from "next/navigation";
 import { startTransition, useState } from "react";
@@ -67,21 +67,30 @@ export function CreateBountyForm() {
 
   async function handleGenerate() {
     setError("");
-    setIsGenerating(true);
-    const response = await fetch("/api/ai/generate-survey", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, description, prompt, questionCount }),
-    });
-    const payload = await response.json();
-    setIsGenerating(false);
-    if (!response.ok) {
-      setError(payload.error ?? "Unable to generate survey.");
+    if (!prompt || prompt.trim().length < 2) {
+      setError("Please enter an AI prompt (at least 2 characters).");
       return;
     }
+    setIsGenerating(true);
+    try {
+      const response = await fetch("/api/ai/generate-survey", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title || undefined, description: description || undefined, prompt, questionCount }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        setError(payload.error ?? "Unable to generate survey.");
+        return;
+      }
 
-    markDraftDirty();
-    setQuestions(sanitizeSurveyQuestions(payload.questions ?? []));
+      markDraftDirty();
+      setQuestions(sanitizeSurveyQuestions(payload.questions ?? []));
+    } catch (generateError) {
+      setError(generateError instanceof Error ? generateError.message : "Unable to generate survey.");
+    } finally {
+      setIsGenerating(false);
+    }
   }
 
   async function handleLaunch() {

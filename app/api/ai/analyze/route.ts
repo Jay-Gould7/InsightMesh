@@ -1,16 +1,20 @@
 import { analyzeSubmissions } from "@/lib/ai/analyzer";
 import { apiError } from "@/lib/api";
 import { getBountyDetail } from "@/lib/db/queries";
-import { bountyIdSchema } from "@/lib/validators";
+import { creatorActionSchema } from "@/lib/validators";
 
 export async function POST(request: Request) {
   try {
     const json = await request.json();
-    const payload = bountyIdSchema.parse(json);
+    const payload = creatorActionSchema.parse(json);
     const bounty = await getBountyDetail(payload.bountyId);
 
     if (!bounty) {
       return apiError("Bounty not found", 404);
+    }
+
+    if (payload.callerAddress.toLowerCase() !== bounty.creatorCoreAddress.toLowerCase()) {
+      return apiError("Only the bounty creator can trigger analysis.", 403);
     }
 
     if (bounty.submissions.length === 0) {
