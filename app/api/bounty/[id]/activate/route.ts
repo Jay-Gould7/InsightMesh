@@ -67,6 +67,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const detail = await getBountyDetail(bounty.id);
     return Response.json({ bounty: detail });
   } catch (error) {
-    return apiError("Unable to activate bounty", 400, error);
+    const message = error instanceof Error ? error.message : "Unable to activate bounty";
+    return apiError(message, 400, error);
   }
 }
