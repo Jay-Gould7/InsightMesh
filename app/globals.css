@@ -14,3 +14,30 @@ body {
 }
 
 a { text-decoration: none; }
+
+/* 隐藏全局滚动条，彻底解决页面左右横跳问题 */
+html, body {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+html::-webkit-scrollbar, body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* Custom styles for native input[type="datetime-local"] */
+.custom-datetime-picker::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+  filter: invert(0.8) sepia(1) hue-rotate(100deg) saturate(3); /* Tint towards green */
+}
+
+.custom-datetime-picker::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.custom-datetime-picker::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+  letter-spacing: 0.5px;
+}

@@ -1,8 +1,16 @@
 import Link from "next/link";
 import { Hexagon } from "lucide-react";
 
+import Shuffle from "./reactbits/shuffle";
+import GooeyNav from "./reactbits/GooeyNav";
 import { WalletHub } from "@/components/wallet-hub";
 import { env } from "@/lib/env";
+import { Press_Start_2P } from "next/font/google";
+
+const pressStart2P = Press_Start_2P({
+  weight: "400",
+  subsets: ["latin"],
+});
 
 export function SiteShell({ children }: { children: React.ReactNode }) {
   return (
@@ -11,14 +19,32 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-2 text-white font-bold text-xl tracking-wide">
             <Hexagon className="text-[#42D293] w-6 h-6" />
-            InsightMesh
+            <Shuffle
+              text="InsightMesh"
+              className={`${pressStart2P.className} text-[20px] mt-1 normal-case tracking-normal`}
+              shuffleDirection="down"
+              duration={0.35}
+              animationMode="evenodd"
+              shuffleTimes={1}
+              ease="power3.out"
+              stagger={0.03}
+              threshold={0.1}
+              triggerOnce={true}
+              triggerOnHover
+              respectReducedMotion={true}
+              loop={false}
+              loopDelay={0}
+            />
           </Link>
           <div className="flex items-center gap-6">
-            <nav className="flex items-center gap-5 text-zinc-400 text-sm font-medium">
-              <Link href="/" className="hover:text-white transition-colors">Explore</Link>
-              <Link href="/bounty/new" className="hover:text-white transition-colors">Launch</Link>
-              <Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link>
-            </nav>
+            <GooeyNav
+              items={[
+                { label: "Explore", href: "/" },
+                { label: "Launch", href: "/bounty/new" },
+                { label: "Dashboard", href: "/dashboard" },
+              ]}
+              initialActiveIndex={0}
+            />
             <div className="flex items-center">
               <WalletHub coreNetworkId={env.coreNetworkId} eSpaceChainId={env.eSpaceChainId} />
             </div>
