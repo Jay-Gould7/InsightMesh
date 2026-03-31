@@ -1,14 +1,12 @@
 "use client";
 
-import { ChevronDown, Copy, LogOut, RefreshCw, Wallet } from "lucide-react";
+import { Copy, LogOut, RefreshCw, Wallet } from "lucide-react";
 import {
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
-import { createPortal } from "react-dom";
 
 import { useESpaceWallet } from "@/components/providers/espace-provider";
 import { useFluentWallet } from "@/components/providers/fluent-provider";
@@ -50,9 +48,9 @@ function parseRpcNumber(value: unknown) {
 }
 
 function toneClasses(tone: WalletNetworkState["tone"]) {
-  if (tone === "good") return "border-emerald-400/30 bg-emerald-400/10 text-emerald-100";
-  if (tone === "warning") return "border-amber-300/30 bg-amber-300/10 text-amber-100";
-  return "border-white/10 bg-white/5 text-stone-300";
+  if (tone === "good") return "border-emerald-400/30 bg-emerald-400/10 text-emerald-400";
+  if (tone === "warning") return "border-amber-400/30 bg-amber-400/10 text-amber-500";
+  return "border-white/10 bg-white/5 text-zinc-400";
 }
 
 function WalletPanel({
@@ -105,86 +103,69 @@ function WalletPanel({
     }
   }
 
-  const isPrimary = emphasis === "primary";
-
   return (
-    <section className={isPrimary ? "rounded-3xl border border-white/10 bg-black/20 p-4" : "rounded-[1.6rem] border border-cyan-300/12 bg-cyan-300/5 p-4"}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <div className={`h-2.5 w-2.5 rounded-full ${accent}`} />
-            <p className="text-xs uppercase tracking-[0.35em] text-stone-400">{label}</p>
-          </div>
-          <p className="text-sm text-stone-300">{helper}</p>
+    <div className="flex flex-col gap-3 py-3 border-b border-white/10 last:border-0 last:pb-1">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full ${accent} ${address ? 'shadow-[0_0_8px] shadow-current' : ''}`} />
+          <span className="text-white text-sm font-medium">{label === "Core" ? "Conflux Core" : "Conflux eSpace"}</span>
         </div>
-        <span className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.25em] ${toneClasses(network.tone)}`}>
+        <span className={`text-[10px] uppercase border rounded-full px-2 py-0.5 font-medium tracking-wide ${toneClasses(network.tone)}`}>
           {network.label}
         </span>
       </div>
 
+      {address ? (
+        <div className="flex items-center justify-between bg-white/5 rounded-xl px-3 py-2 border border-white/5">
+          <span className="font-mono text-sm text-zinc-300">
+            {truncateAddress(address, 5)}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleCopy}
+              className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              title="Copy Address"
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={disconnect}
+              className="p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-white/10 rounded-lg transition-colors"
+              title="Disconnect"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={handleConnect}
+          disabled={isBusy}
+          className="self-start text-xs font-medium bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-full px-4 py-1.5 transition-colors disabled:opacity-50"
+        >
+          {isBusy ? "Connecting..." : `Connect`}
+        </button>
+      )}
+
       {walletOptions?.length ? (
-        <label className="mt-4 block">
-          <span className="text-xs uppercase tracking-[0.3em] text-stone-500">Wallet app</span>
+        <div className="mt-1">
           <select
             value={walletId}
             onChange={(event) => void handleWalletSelect(event.target.value)}
             disabled={isBusy}
-            className="mt-2 w-full rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-sm text-white outline-none disabled:opacity-60"
+            className="w-full text-xs bg-black/40 border border-white/10 rounded-lg px-2 py-2 text-zinc-300 outline-none hover:border-white/20 transition-colors cursor-pointer appearance-none"
           >
             {walletOptions.map((wallet) => (
-              <option key={wallet.id} value={wallet.id} className="bg-[#09120d]">
+              <option key={wallet.id} value={wallet.id} className="bg-[#0A0A0A]">
                 {wallet.name}
               </option>
             ))}
           </select>
-          <p className="mt-2 text-xs text-stone-500">
-            {walletName ? `Current provider: ${walletName}` : "Choose which EVM wallet extension InsightMesh should talk to."}
-          </p>
-        </label>
+        </div>
       ) : null}
 
-      <div className={`mt-4 rounded-2xl px-4 py-3 ${isPrimary ? "border border-white/8 bg-white/5" : "border border-cyan-300/10 bg-black/20"}`}>
-        <p className="text-xs uppercase tracking-[0.3em] text-stone-500">Active account</p>
-        <p className="mt-2 text-sm text-white">
-          {address ? truncateAddress(address, 10) : "Not connected"}
-        </p>
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        {address ? (
-          <>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs ${isPrimary ? "border border-white/10 text-white" : "border border-cyan-300/15 text-cyan-50"}`}
-            >
-              <Copy className="h-3.5 w-3.5" />
-              {copied ? "Copied" : "Copy"}
-            </button>
-            <button
-              type="button"
-              onClick={disconnect}
-              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs ${isPrimary ? "border border-white/10 text-stone-200" : "border border-cyan-300/15 text-stone-200"}`}
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              Disconnect
-            </button>
-          </>
-        ) : (
-          <button
-            type="button"
-            onClick={handleConnect}
-            disabled={isBusy}
-            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs disabled:opacity-60 ${isPrimary ? "border border-white/10 text-white" : "border border-cyan-300/15 text-cyan-50"}`}
-          >
-            <Wallet className="h-3.5 w-3.5" />
-            {isBusy ? "Connecting..." : `Connect ${label}`}
-          </button>
-        )}
-      </div>
-
-      {error ? <p className="mt-3 text-xs text-rose-300">{error}</p> : null}
-    </section>
+      {error ? <p className="text-xs text-rose-400">{error}</p> : null}
+    </div>
   );
 }
 
@@ -195,7 +176,6 @@ export function WalletHub({ coreNetworkId, eSpaceChainId }: WalletHubProps) {
   const [isESpaceExpanded, setIsESpaceExpanded] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
-  const [panelStyle, setPanelStyle] = useState({ top: 0, left: 0 });
   const [coreChainHint, setCoreChainHint] = useState<number | null>(null);
   const [coreNetwork, setCoreNetwork] = useState<WalletNetworkState>({ tone: "neutral", label: "Idle" });
   const [eSpaceNetwork, setESpaceNetwork] = useState<WalletNetworkState>({ tone: "neutral", label: "Idle" });
@@ -218,11 +198,8 @@ export function WalletHub({ coreNetworkId, eSpaceChainId }: WalletHubProps) {
   } = useESpaceWallet();
 
   const connectedCount = [coreAddress, eSpaceAddress].filter(Boolean).length;
-  const buttonLabel = useMemo(() => {
-    if (connectedCount === 0) return "Connect Wallets";
-    if (connectedCount === 2) return "2 Wallets Connected";
-    return "1 Wallet Connected";
-  }, [connectedCount]);
+  const primaryAddress = coreAddress || eSpaceAddress;
+  const isConnected = !!primaryAddress;
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
@@ -240,37 +217,6 @@ export function WalletHub({ coreNetworkId, eSpaceChainId }: WalletHubProps) {
     window.addEventListener("pointerdown", handlePointerDown);
     return () => window.removeEventListener("pointerdown", handlePointerDown);
   }, [isOpen]);
-
-  useLayoutEffect(() => {
-    if (!isOpen) return;
-
-    function updatePanelPosition() {
-      const trigger = rootRef.current;
-      if (!trigger) return;
-
-      const rect = trigger.getBoundingClientRect();
-      const panelWidth = Math.min(window.innerWidth * 0.92, 480);
-      const horizontalPadding = 16;
-      const left = Math.min(
-        Math.max(horizontalPadding, rect.right - panelWidth),
-        window.innerWidth - panelWidth - horizontalPadding,
-      );
-
-      setPanelStyle({
-        top: rect.bottom + 12,
-        left,
-      });
-    }
-
-    updatePanelPosition();
-    window.addEventListener("resize", updatePanelPosition);
-    window.addEventListener("scroll", updatePanelPosition, true);
-
-    return () => {
-      window.removeEventListener("resize", updatePanelPosition);
-      window.removeEventListener("scroll", updatePanelPosition, true);
-    };
-  }, [isOpen, buttonLabel]);
 
   useEffect(() => {
     function handleCoreChainChange(chainId?: unknown) {
@@ -376,101 +322,63 @@ export function WalletHub({ coreNetworkId, eSpaceChainId }: WalletHubProps) {
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm text-white shadow-[0_16px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl"
+        className={
+          isConnected
+            ? "inline-flex items-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 rounded-full px-4 py-2 transition-colors"
+            : "inline-flex items-center gap-2 bg-white/5 border border-white/10 hover:bg-white/10 rounded-full px-4 py-2 text-sm font-medium text-white transition-colors"
+        }
       >
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-lime-300 to-cyan-300 text-stone-900">
-          <Wallet className="h-4 w-4" />
-        </span>
-        <div className="text-left">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-stone-400">Wallet hub</p>
-          <p className="text-sm text-white">{buttonLabel}</p>
-        </div>
-        <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[11px] uppercase tracking-[0.25em] text-stone-300">
-          {connectedCount}/2
-        </span>
-        <ChevronDown className={`h-4 w-4 text-stone-300 transition ${isOpen ? "rotate-180" : ""}`} />
+        {isConnected ? (
+          <>
+            <span className="w-2 h-2 rounded-full bg-[#42D293] shadow-[0_0_8px_#42D293] animate-pulse" />
+            <span className="font-mono text-sm text-zinc-200">{truncateAddress(primaryAddress, 5)}</span>
+          </>
+        ) : (
+          <>
+            <Wallet className="w-4 h-4" />
+            Connect Wallet
+          </>
+        )}
       </button>
 
-      {isOpen && typeof document !== "undefined"
-        ? createPortal(
-            <div
-              ref={panelRef}
-              className="fixed z-[9999] w-[min(92vw,30rem)] rounded-[2rem] border border-white/10 bg-[#09120d]/95 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.42)] backdrop-blur-2xl"
-              style={{ top: panelStyle.top, left: panelStyle.left }}
-            >
-              <div className="flex items-center justify-between gap-3 px-2 pb-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-lime-300/70">Wallet control</p>
-                  <h3 className="mt-2 text-xl font-semibold text-white">Core first</h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs text-stone-200 disabled:opacity-60"
-                >
-                  <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-                  {isRefreshing ? "Refreshing..." : "Refresh"}
-                </button>
-              </div>
+      <div
+        ref={panelRef}
+        className={`absolute right-0 mt-2 w-80 bg-[#0A0A0A]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl z-50 origin-top-right transition-all duration-300 ease-out ${
+          isOpen ? "scale-100 opacity-100 pointer-events-auto" : "scale-95 opacity-0 pointer-events-none"
+        }`}
+      >
+        <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-2">
+          <span className="text-sm font-medium text-white">Wallets</span>
+          <button onClick={handleRefresh} disabled={isRefreshing} className="text-zinc-400 hover:text-white transition-colors disabled:opacity-50">
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
+          </button>
+        </div>
 
-              <div className="grid gap-3">
-                <WalletPanel
-                  label="Core"
-                  accent="bg-lime-300"
-                  address={coreAddress}
-                  network={coreNetwork}
-                  helper="Use Fluent for the main flow on Core Space."
-                  connect={connectCore}
-                  disconnect={disconnectCore}
-                />
-                <section className="rounded-[1.4rem] border border-cyan-300/10 bg-cyan-300/4 px-4 py-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsESpaceExpanded((current) => !current)}
-                    className="flex w-full items-center justify-between gap-3 text-left"
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div className="h-2.5 w-2.5 rounded-full bg-cyan-300" />
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.35em] text-stone-400">eSpace</p>
-                        <p className="mt-1 text-sm text-stone-300">
-                          {eSpaceAddress ? truncateAddress(eSpaceAddress, 8) : "Optional for payout autofill and settlement"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.25em] ${toneClasses(eSpaceNetwork.tone)}`}>
-                        {eSpaceNetwork.label}
-                      </span>
-                      <ChevronDown className={`h-4 w-4 text-stone-300 transition ${isESpaceExpanded ? "rotate-180" : ""}`} />
-                    </div>
-                  </button>
-
-                  {isESpaceExpanded ? (
-                    <div className="mt-3">
-                      <WalletPanel
-                        label="eSpace"
-                        accent="bg-cyan-300"
-                        address={eSpaceAddress}
-                        network={eSpaceNetwork}
-                        emphasis="secondary"
-                        helper="Optional. Mainly for creator funding, settlement, or autofill."
-                        walletName={eSpaceWalletName}
-                        walletId={eSpaceWalletId}
-                        walletOptions={eSpaceWallets}
-                        selectWallet={selectESpaceWallet}
-                        connect={connectESpace}
-                        disconnect={disconnectESpace}
-                      />
-                    </div>
-                  ) : null}
-                </section>
-              </div>
-            </div>,
-            document.body,
-          )
-        : null}
+        <div className="flex flex-col">
+          <WalletPanel
+            label="Core"
+            accent="bg-[#42D293] text-[#42D293]"
+            address={coreAddress}
+            network={coreNetwork}
+            helper=""
+            connect={connectCore}
+            disconnect={disconnectCore}
+          />
+          <WalletPanel
+            label="eSpace"
+            accent="bg-cyan-400 text-cyan-400"
+            address={eSpaceAddress}
+            network={eSpaceNetwork}
+            helper=""
+            walletName={eSpaceWalletName}
+            walletId={eSpaceWalletId}
+            walletOptions={eSpaceWallets}
+            selectWallet={selectESpaceWallet}
+            connect={connectESpace}
+            disconnect={disconnectESpace}
+          />
+        </div>
+      </div>
     </div>
   );
 }
