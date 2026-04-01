@@ -1,10 +1,11 @@
 "use client";
 
-import { Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronUp, MessageSquareText, CircleCheck, CheckSquare, Star } from "lucide-react";
 import { useState, type Dispatch, type SetStateAction } from "react";
 
 import AnimatedList from "@/components/reactbits/AnimatedList";
 import { createBlankQuestion, formatQuestionTypeLabel, isSelectQuestionType, QUESTION_TYPE_OPTIONS } from "@/lib/survey";
+import Dock from "./reactbits/Dock";
 import type { SurveyQuestion, SurveyQuestionType } from "@/lib/types";
 
 type SurveyBuilderProps = {
@@ -63,25 +64,45 @@ export function SurveyBuilder({ questions, setQuestions }: SurveyBuilderProps) {
     }));
   }
 
+  const items = [
+    { 
+      icon: <MessageSquareText size={20} strokeWidth={1.5} className="text-[#42D293] drop-shadow-[0_0_8px_rgba(66,210,147,0.4)]" />, 
+      label: "Text", 
+      onClick: () => addQuestion(setQuestions, "text") 
+    },
+    { 
+      icon: <CircleCheck size={20} strokeWidth={1.5} className="text-[#42D293] drop-shadow-[0_0_8px_rgba(66,210,147,0.4)]" />, 
+      label: "Single Choice", 
+      onClick: () => addQuestion(setQuestions, "single_select") 
+    },
+    { 
+      icon: <CheckSquare size={20} strokeWidth={1.5} className="text-[#42D293] drop-shadow-[0_0_8px_rgba(66,210,147,0.4)]" />, 
+      label: "Multi Choice", 
+      onClick: () => addQuestion(setQuestions, "multi_select") 
+    },
+    { 
+      icon: <Star size={20} strokeWidth={1.5} className="text-[#42D293] drop-shadow-[0_0_8px_rgba(66,210,147,0.4)]" />, 
+      label: "Rating", 
+      onClick: () => addQuestion(setQuestions, "rating") 
+    },
+  ];
+
   return (
-    <div className="flex flex-col gap-6">
-      {/* SECTION 2: Add Question Buttons */}
-      <div className="flex w-full gap-3">
-        {QUESTION_TYPE_OPTIONS.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => addQuestion(setQuestions, option.value)}
-            className="flex-1 flex justify-center items-center gap-2 px-3 py-3 rounded-full bg-[#1A2E1F] border border-[#42D293]/40 text-[#42D293] hover:bg-[#42D293]/20 hover:border-[#42D293] hover:shadow-[0_0_12px_rgba(66,210,147,0.3)] transition-all text-xs font-bold tracking-wide whitespace-nowrap"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            {option.label}
-          </button>
-        ))}
+    <div className="flex flex-col gap-4">
+      {/* SECTION 2: Add Question Buttons - NOW FIXED AT BOTTOM OF RIGHT PANE */}
+      <div className="fixed bottom-6 right-6 w-1/2 flex items-center justify-center z-50 pointer-events-none">
+        <div className="pointer-events-auto">
+          <Dock 
+            items={items}
+            panelHeight={50}
+            baseItemSize={50}
+            magnification={70}
+          />
+        </div>
       </div>
 
       {/* SECTION 3: Accordion Question List */}
-      <div className="space-y-0">
+      <div className="space-y-0 relative">
         {questions.length === 0 ? (
           <div className="rounded-xl border border-dashed border-zinc-800 p-6 text-sm text-zinc-500 text-center">
             Generate the AI survey first, or start from scratch using the buttons above.

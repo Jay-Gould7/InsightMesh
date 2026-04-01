@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { startTransition, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { AlertTriangle, Sparkles, X, Info, Rocket } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import GlareHover from "./reactbits/GlareHover";
 
 import { SurveyBuilder } from "@/components/survey-builder";
@@ -51,11 +52,20 @@ export function CreateBountyForm() {
   const [rewardAmount, setRewardAmount] = useState("100.00");
   const [deadline, setDeadline] = useState(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16));
   const [questions, setQuestions] = useState<SurveyQuestion[]>([]);
-  const [error, setError] = useState("");
+  const [formError, setFormError] = useState("");
+  const [launchError, setLaunchError] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLaunching, setIsLaunching] = useState(false);
   const [launchStage, setLaunchStage] = useState("");
   const [pendingLaunch, setPendingLaunch] = useState<PendingLaunch | null>(null);
+  const [showDraftTip, setShowDraftTip] = useState(true);
+
+  const [lastBountyId, setLastBountyId] = useState<number | null>(null);
+  // Correctly sync internal state when the pendingLaunch object changes to a different bounty
+  if (pendingLaunch && pendingLaunch.bountyId !== lastBountyId) {
+    setLastBountyId(pendingLaunch.bountyId);
+    setShowDraftTip(true);
+  }
 
   function markDraftDirty() {
     setPendingLaunch((current) => {
@@ -77,10 +87,11 @@ export function CreateBountyForm() {
     const activeDescription = description.trim() || DEFAULT_DESCRIPTION;
     const activePrompt = prompt.trim() || DEFAULT_PROMPT;
 
-    setError("");
+    setFormError("");
+    setLaunchError("");
     // Active prompt is guaranteed to be non-empty unless defaults change
     if (activePrompt.length < 2) {
-      setError("Please enter an AI prompt (at least 2 characters).");
+      setFormError("Please enter an AI prompt (at least 2 characters).");
       return;
     }
     setIsGenerating(true);
@@ -92,21 +103,22 @@ export function CreateBountyForm() {
       });
       const payload = await response.json();
       if (!response.ok) {
-        setError(payload.error ?? "Unable to generate survey.");
+        setFormError(payload.error ?? "Unable to generate survey.");
         return;
       }
 
       markDraftDirty();
       setQuestions(sanitizeSurveyQuestions(payload.questions ?? []));
     } catch (generateError) {
-      setError(generateError instanceof Error ? generateError.message : "Unable to generate survey.");
+      setFormError(generateError instanceof Error ? generateError.message : "Unable to generate survey.");
     } finally {
       setIsGenerating(false);
     }
   }
 
   async function handleLaunch() {
-    setError("");
+    setFormError("");
+    setLaunchError("");
     setIsLaunching(true);
     let currentLaunch = pendingLaunch;
 
@@ -259,7 +271,7 @@ export function CreateBountyForm() {
             : currentLaunch
               ? ` Draft #${currentLaunch.bountyId} is saved.`
               : "";
-      setError(`${message}${retryHint}`);
+      setLaunchError(`${message}${retryHint}`);
     } finally {
       setLaunchStage("");
       setIsLaunching(false);
@@ -267,6 +279,7 @@ export function CreateBountyForm() {
   }
 
   const previewQuestions = sanitizeSurveyQuestions(questions);
+  const launchDisabled = isLaunching || questions.length < 3 || !coreAddress || !eSpaceAddress;
 
   const singleSelectCount = questions.filter((q) => isSelectQuestionType(q.type) && !q.allowOther).length;
   const multiSelectCount = questions.filter((q) => isSelectQuestionType(q.type) && q.allowOther).length;
@@ -383,31 +396,115 @@ export function CreateBountyForm() {
           </div>
         </div>
 
-        {launchStage ? <p className="mt-4 text-sm text-cyan-400">{launchStage}</p> : null}
-        {pendingLaunch ? <p className="mt-4 text-sm text-zinc-500 bg-zinc-900/50 border border-zinc-800 p-3 rounded-lg">Draft #{pendingLaunch.bountyId} is staged. Retrying launch will skip already confirmed transactions.</p> : null}
-        {error ? <p className="mt-4 text-sm text-rose-400">{error}</p> : null}
+        <div className="mt-auto flex flex-col gap-2 pt-6 relative">
+          <AnimatePresence mode="popLayout">
+            {/* 1. Pending Draft Tip (Dismissible) */}
+            {pendingLaunch && showDraftTip && !launchStage && !formError && (
+              <motion.div
+                key="pending-draft"
+                initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96, y: 8 }}
+                className="absolute bottom-[calc(100%+0.5rem)] left-0 right-0 z-20 flex items-start gap-3 rounded-2xl border border-white/10 bg-[#0c1410]/80 p-4 shadow-[0_20px_40px_-12px_rgba(0,0,0,0.5)] backdrop-blur-2xl ring-1 ring-white/10"
+              >
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#42D293]/10 text-[#42D293]">
+                  <Info className="h-3.5 w-3.5" />
+                </div>
+                <div className="flex-1 pr-6">
+                  <p className="text-[13px] leading-relaxed font-medium text-zinc-100">
+                    Draft <span className="text-[#42D293]">#{pendingLaunch.bountyId}</span> is staged. 
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-zinc-400/90 leading-tight">
+                    Retrying launch will intelligently skip already confirmed transactions.
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setShowDraftTip(false)}
+                  className="absolute right-3 top-3 h-6 w-6 flex items-center justify-center rounded-lg hover:bg-white/10 text-zinc-500 hover:text-white transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+                <div className="absolute -bottom-px left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-[#42D293]/50 to-transparent shadow-[0_0_10px_rgba(66,210,147,0.3)]" />
+              </motion.div>
+            )}
 
-        <div className="mt-auto flex flex-col gap-2 pt-6">
+            {/* 2. Progress Indicator (Transient) */}
+            {launchStage && (
+              <motion.div
+                key="launch-stage"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="absolute bottom-[calc(100%+0.5rem)] left-0 right-0 z-30 flex items-center gap-3 rounded-2xl border border-cyan-500/20 bg-cyan-950/20 p-4 shadow-[0_20px_40px_-12px_rgba(0,0,0,0.5)] backdrop-blur-2xl"
+              >
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cyan-400/20 text-cyan-400">
+                  <div className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+                </div>
+                <p className="text-[13px] font-medium text-cyan-100/90 tracking-wide animate-pulse">
+                  {launchStage}
+                </p>
+                {/* Active progress bar underneath */}
+                <div className="absolute -bottom-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
+              </motion.div>
+            )}
+
+            {/* 3. Error Message (Urgent) */}
+            {formError && (
+              <motion.div
+                key="form-error"
+                initial={{ opacity: 0, y: 12, rotateX: -10 }}
+                animate={{ opacity: 1, y: 0, rotateX: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="absolute bottom-[calc(100%+0.5rem)] left-0 right-0 z-40 flex items-start gap-3 rounded-2xl border border-rose-500/20 bg-[#1a0c0e]/80 p-4 shadow-[0_20px_40px_-12px_rgba(0,0,0,0.6)] backdrop-blur-2xl ring-1 ring-rose-500/10"
+              >
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-500/20 text-rose-400">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                </div>
+                <div className="flex-1 pr-6">
+                  <p className="text-[13px] font-semibold text-rose-100">Launch Interrupted</p>
+                  <p className="mt-0.5 text-[11px] text-rose-300/80 leading-snug">{formError}</p>
+                </div>
+                <button 
+                  onClick={() => setFormError("")}
+                  className="absolute right-3 top-3 h-6 w-6 flex items-center justify-center rounded-lg hover:bg-rose-500/10 text-rose-500/60 hover:text-rose-400 transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+                <div className="absolute -bottom-px left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-rose-500/60 to-transparent" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+
           <div className="flex gap-4">
             <GlareHover
               width="100%"
-              height="50px"
-              background="rgba(255, 255, 255, 0.03)"
-              borderRadius="12px"
-              borderColor="rgba(255, 255, 255, 0.1)"
+              height="58px"
+              background="linear-gradient(135deg, rgba(255,255,255,0.04), rgba(66,210,147,0.08))"
+              borderRadius="18px"
+              borderColor="rgba(255, 255, 255, 0.14)"
               glareColor="#42D293"
-              glareOpacity={0.15}
-              glareSize={300}
-              className={`flex-1 transition-all duration-300 ${isGenerating ? 'opacity-50 pointer-events-none' : 'hover:border-[#42D293]/50'}`}
+              glareOpacity={0.2}
+              glareSize={320}
+              className={`group flex-1 border shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_18px_30px_rgba(0,0,0,0.18)] transition-all duration-300 ${isGenerating ? "pointer-events-none opacity-50 saturate-50" : "hover:-translate-y-0.5 hover:border-[#42D293]/60 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_24px_40px_rgba(61,195,137,0.14)] active:translate-y-0 active:scale-[0.985]"}`}
               onClick={handleGenerate}
             >
-              <div className="flex items-center justify-center text-sm font-semibold text-zinc-300">
-                <Sparkles className={`w-4 h-4 mr-2 ${isGenerating ? 'animate-spin' : ''}`} />
-                {isGenerating ? "Crafting..." : "Generate AI"}
+              <div className="pointer-events-none flex w-full items-center justify-center gap-3 px-5 text-sm font-semibold text-zinc-100">
+                <Sparkles className={`h-5 w-5 text-[#8df2bf] ${isGenerating ? "animate-spin" : "transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110"}`} />
+                <span className="text-base font-semibold text-zinc-100">{isGenerating ? "Crafting..." : "Generate AI"}</span>
               </div>
             </GlareHover>
-            <button onClick={handleLaunch} disabled={isLaunching || questions.length < 3 || !coreAddress || !eSpaceAddress} className="flex-1 rounded-xl bg-[#42D293] px-5 py-3.5 text-sm text-black font-extrabold hover:bg-[#34b87e] transition-colors shadow-[0_0_20px_rgba(66,210,147,0.4)] focus:outline-none focus:ring-2 focus:ring-[#42D293]/50 disabled:opacity-50 disabled:bg-[#42D293]/50 disabled:shadow-none min-h-[50px]">
-              {isLaunching ? "Publishing..." : "Launch"}
+            <button
+              onClick={handleLaunch}
+              disabled={launchDisabled}
+              className="group relative flex min-h-[58px] flex-1 items-center justify-center overflow-hidden rounded-[18px] border border-[#7bf1b8]/25 bg-[linear-gradient(135deg,#58efaa_0%,#42D293_42%,#1e7c59_100%)] px-5 py-3.5 text-sm font-black text-[#04120b] shadow-[0_18px_36px_rgba(66,210,147,0.28),inset_0_1px_0_rgba(255,255,255,0.28)] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7bf1b8]/40 disabled:cursor-not-allowed disabled:border-[#42D293]/10 disabled:bg-[linear-gradient(135deg,rgba(88,239,170,0.45)_0%,rgba(66,210,147,0.5)_42%,rgba(30,124,89,0.4)_100%)] disabled:text-[#04120b]/55 disabled:shadow-none disabled:saturate-75 disabled:hover:translate-y-0 disabled:hover:shadow-none hover:-translate-y-0.5 hover:shadow-[0_24px_46px_rgba(66,210,147,0.34),inset_0_1px_0_rgba(255,255,255,0.34)] active:translate-y-0 active:scale-[0.985]"
+            >
+              <span className="pointer-events-none absolute inset-x-5 top-0 h-px bg-white/40 opacity-80" />
+              <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.24),transparent_48%)] opacity-70 transition-opacity duration-300 group-hover:opacity-100" />
+              <div className="relative flex items-center justify-center gap-2.5">
+                <Rocket className={`h-5 w-5 ${isLaunching ? "animate-pulse opacity-70" : "transition-transform duration-500 group-hover:translate-x-1 group-hover:-translate-y-1"}`} />
+                <span className="text-base font-black tracking-tight">{isLaunching ? "Publishing..." : "Launch"}</span>
+              </div>
             </button>
           </div>
           {(!coreAddress || !eSpaceAddress) && (
@@ -418,29 +515,74 @@ export function CreateBountyForm() {
 
       {/* RIGHT PANE */}
       <div className="w-1/2 pl-8 pb-32 flex flex-col gap-6">
-        <div className="bg-[#42D293]/10 border border-[#42D293]/30 shadow-[0_0_15px_rgba(66,210,147,0.1)] rounded-xl p-4 flex items-center gap-3 text-[#42D293] text-sm font-bold shrink-0 transition-all duration-300">
-          <Sparkles className={`h-5 w-5 shrink-0 ${isGenerating ? 'animate-spin' : ''}`} />
-          {isGenerating ? (
-            <span className="animate-pulse">✨ AI is crafting your survey questions...</span>
-          ) : questions.length > 0 ? (
-            <span>
-              ✨ {questions.length} Questions Generated (
-              {[
-                selectCount > 0 && `${selectCount} Select`,
-                textInputCount > 0 && `${textInputCount} Text`,
-                ratingCount > 0 && `${ratingCount} Rating`
-              ].filter(Boolean).join(", ")}
-              )
-            </span>
-          ) : (
-            <span className="opacity-60 font-medium">✨ Ready to generate survey questions with AI.</span>
-          )}
+        <div className="flex items-center gap-5 px-1 py-2 text-[#42D293] font-bold shrink-0 transition-all duration-500">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#42D293]/10 text-[#42D293] shadow-[0_0_10px_rgba(66,210,147,0.1)]">
+            <Sparkles className={`h-4.5 w-4.5 ${isGenerating ? 'animate-spin' : 'animate-pulse'}`} />
+          </div>
+          <div className="flex-1">
+            {isGenerating ? (
+              <span className="animate-pulse flex items-center gap-2 text-[#42D293]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#42D293] shadow-[0_0_8px_#42D293]" />
+                AI is crafting your survey questions...
+              </span>
+            ) : questions.length > 0 ? (
+              <div className="flex items-center gap-4">
+                <span className="text-[14px] font-black uppercase tracking-[0.05em] text-[#42D293]">
+                  {questions.length} Questions Generated
+                </span>
+                <span className="text-zinc-500 font-medium text-[12px] flex items-center gap-2">
+                  <span className="h-[3px] w-[3px] rounded-full bg-zinc-700" />
+                  <span>
+                    {[
+                      selectCount > 0 && `${selectCount} Select`,
+                      textInputCount > 0 && `${textInputCount} Text`,
+                      ratingCount > 0 && `${ratingCount} Rating`
+                    ].filter(Boolean).join(" · ")}
+                  </span>
+                </span>
+              </div>
+            ) : (
+              <span className="opacity-60 font-medium text-zinc-500 italic text-sm">Ready to generate survey questions with AI.</span>
+            )}
+          </div>
         </div>
 
         <SurveyBuilder questions={questions} setQuestions={updateQuestions} />
       </div>
-      </div>
+    </div>
+      {launchError ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg overflow-hidden rounded-[28px] border border-rose-400/18 bg-[linear-gradient(180deg,rgba(28,12,14,0.98),rgba(10,10,10,0.98))] p-6 shadow-[0_28px_80px_rgba(0,0,0,0.45)]">
+            <button
+              type="button"
+              onClick={() => setLaunchError("")}
+              className="absolute right-4 top-4 rounded-full border border-white/10 bg-white/5 p-2 text-zinc-400 transition-colors hover:border-white/15 hover:text-white"
+              aria-label="Close error dialog"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <div className="flex items-start gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-rose-400/18 bg-rose-500/12 text-rose-300">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div className="pr-8">
+                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-rose-300/75">Publish Failed</p>
+                <h3 className="mt-2 text-2xl font-semibold text-white">The bounty was not published.</h3>
+                <p className="mt-3 text-sm leading-7 text-zinc-300">{launchError}</p>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setLaunchError("")}
+                className="rounded-full border border-white/12 bg-white/6 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:border-white/20 hover:bg-white/10"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
-

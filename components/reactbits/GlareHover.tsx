@@ -77,7 +77,7 @@ const GlareHover: React.FC<GlareHoverProps> = ({
   const overlayStyle: React.CSSProperties = {
     position: 'absolute',
     inset: 0,
-    background: `linear-gradient(${glareAngle}deg,
+    backgroundImage: `linear-gradient(${glareAngle}deg,
         hsla(0,0%,0%,0) 60%,
         ${rgba} 70%,
         hsla(0,0%,0%,0) 100%)`,
