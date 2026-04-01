@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { startTransition, useState } from "react";
 import { Sparkles } from "lucide-react";
+import GlareHover from "./reactbits/GlareHover";
 
 import { SurveyBuilder } from "@/components/survey-builder";
 import LightRays from "@/components/reactbits/LightRays";
@@ -273,6 +274,7 @@ export function CreateBountyForm() {
   // We can just calculate exactly what was requested.
   const textInputCount = questions.filter((q) => q.type === "text").length;
   const selectCount = questions.filter((q) => isSelectQuestionType(q.type)).length;
+  const ratingCount = questions.filter((q) => q.type === "rating").length;
 
   return (
     <>
@@ -315,17 +317,34 @@ export function CreateBountyForm() {
         <div className="flex flex-col gap-4">
           <label className="block">
             <span className="text-[10px] sm:text-xs font-bold tracking-widest text-zinc-500 uppercase mb-2 block">Title</span>
-            <input className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 focus:border-[#42D293] focus:ring-1 focus:ring-[#42D293] text-sm text-zinc-200 placeholder:text-zinc-600 transition-all outline-none" placeholder={DEFAULT_TITLE} value={title} onChange={(event) => { markDraftDirty(); setTitle(event.target.value); }} />
+            <input 
+              className="w-full bg-white/[0.03] border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] backdrop-blur-md rounded-xl px-4 py-3 focus:bg-white/[0.05] focus:border-[#42D293]/50 focus:ring-1 focus:ring-[#42D293]/50 text-sm text-zinc-200 placeholder:text-zinc-500 transition-all outline-none" 
+              placeholder={DEFAULT_TITLE} 
+              value={title} 
+              onChange={(event) => { markDraftDirty(); setTitle(event.target.value); }} 
+            />
           </label>
           
           <label className="block">
             <span className="text-[10px] sm:text-xs font-bold tracking-widest text-zinc-500 uppercase mb-2 block">Description</span>
-            <textarea rows={3} className="resize-none w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 focus:border-[#42D293] focus:ring-1 focus:ring-[#42D293] text-sm text-zinc-200 placeholder:text-zinc-600 transition-all outline-none" placeholder={DEFAULT_DESCRIPTION} value={description} onChange={(event) => { markDraftDirty(); setDescription(event.target.value); }} />
+            <textarea 
+              rows={3} 
+              className="resize-none w-full bg-white/[0.03] border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] backdrop-blur-md rounded-xl px-4 py-3 focus:bg-white/[0.05] focus:border-[#42D293]/50 focus:ring-1 focus:ring-[#42D293]/50 text-sm text-zinc-200 placeholder:text-zinc-500 transition-all outline-none" 
+              placeholder={DEFAULT_DESCRIPTION} 
+              value={description} 
+              onChange={(event) => { markDraftDirty(); setDescription(event.target.value); }} 
+            />
           </label>
           
           <label className="block">
             <span className="text-[10px] sm:text-xs font-bold tracking-widest text-zinc-500 uppercase mb-2 block">AI prompt</span>
-            <textarea rows={3} className="resize-none w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 focus:border-[#42D293] focus:ring-1 focus:ring-[#42D293] text-sm text-zinc-200 placeholder:text-zinc-600 transition-all outline-none" placeholder={DEFAULT_PROMPT} value={prompt} onChange={(event) => { markDraftDirty(); setPrompt(event.target.value); }} />
+            <textarea 
+              rows={3} 
+              className="resize-none w-full bg-white/[0.03] border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] backdrop-blur-md rounded-xl px-4 py-3 focus:bg-white/[0.05] focus:border-[#42D293]/50 focus:ring-1 focus:ring-[#42D293]/50 text-sm text-zinc-200 placeholder:text-zinc-500 transition-all outline-none" 
+              placeholder={DEFAULT_PROMPT} 
+              value={prompt} 
+              onChange={(event) => { markDraftDirty(); setPrompt(event.target.value); }} 
+            />
           </label>
 
           <div className="grid grid-cols-10 gap-4">
@@ -335,7 +354,7 @@ export function CreateBountyForm() {
                 type="number"
                 min={3}
                 max={8}
-                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 focus:border-[#42D293] focus:ring-1 focus:ring-[#42D293] text-sm text-zinc-200 transition-all outline-none"
+                className="w-full bg-white/[0.03] border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] backdrop-blur-md rounded-xl px-4 py-3 focus:bg-white/[0.05] focus:border-[#42D293]/50 focus:ring-1 focus:ring-[#42D293]/50 text-sm text-zinc-200 outline-none transition-all"
                 value={questionCount}
                 onChange={(event) => {
                   markDraftDirty();
@@ -346,13 +365,17 @@ export function CreateBountyForm() {
             </label>
             <label className="col-span-3 block">
               <span className="text-[10px] sm:text-xs font-bold tracking-widest text-zinc-500 uppercase mb-2 block">Reward</span>
-              <input className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 focus:border-[#42D293] focus:ring-1 focus:ring-[#42D293] text-sm text-zinc-200 transition-all outline-none" value={rewardAmount} onChange={(event) => { markDraftDirty(); setRewardAmount(event.target.value); }} />
+              <input 
+                className="w-full bg-white/[0.03] border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] backdrop-blur-md rounded-xl px-4 py-3 focus:bg-white/[0.05] focus:border-[#42D293]/50 focus:ring-1 focus:ring-[#42D293]/50 text-sm text-zinc-200 transition-all outline-none" 
+                value={rewardAmount} 
+                onChange={(event) => { markDraftDirty(); setRewardAmount(event.target.value); }} 
+              />
             </label>
             <label className="col-span-4 block">
               <span className="text-[10px] sm:text-xs font-bold tracking-widest text-zinc-500 uppercase mb-2 block">Deadline</span>
               <input 
                 type="datetime-local" 
-                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 focus:border-[#42D293] focus:ring-1 focus:ring-[#42D293] text-sm text-zinc-200 transition-all outline-none accent-[#42D293] cursor-pointer custom-datetime-picker" 
+                className="w-full bg-white/[0.03] border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] backdrop-blur-md rounded-xl px-4 py-3 focus:bg-white/[0.05] focus:border-[#42D293]/50 focus:ring-1 focus:ring-[#42D293]/50 text-sm text-zinc-200 transition-all outline-none accent-[#42D293] cursor-pointer custom-datetime-picker" 
                 value={deadline} 
                 onChange={(event) => { markDraftDirty(); setDeadline(event.target.value); }} 
               />
@@ -366,10 +389,23 @@ export function CreateBountyForm() {
 
         <div className="mt-auto flex flex-col gap-2 pt-6">
           <div className="flex gap-4">
-            <button onClick={handleGenerate} disabled={isGenerating} className="flex-1 flex justify-center items-center rounded-xl border border-zinc-700 hover:border-[#42D293] hover:text-[#42D293] bg-zinc-900/50 hover:bg-[#42D293]/10 transition-all duration-300 shadow-sm px-5 py-3.5 text-sm font-semibold text-zinc-300 focus:outline-none focus:ring-2 focus:ring-[#42D293]/50 disabled:opacity-50 min-h-[50px]">
-              <Sparkles className="w-4 h-4 mr-2" />
-              {isGenerating ? "Generating..." : "Generate AI"}
-            </button>
+            <GlareHover
+              width="100%"
+              height="50px"
+              background="rgba(255, 255, 255, 0.03)"
+              borderRadius="12px"
+              borderColor="rgba(255, 255, 255, 0.1)"
+              glareColor="#42D293"
+              glareOpacity={0.15}
+              glareSize={300}
+              className={`flex-1 transition-all duration-300 ${isGenerating ? 'opacity-50 pointer-events-none' : 'hover:border-[#42D293]/50'}`}
+              onClick={handleGenerate}
+            >
+              <div className="flex items-center justify-center text-sm font-semibold text-zinc-300">
+                <Sparkles className={`w-4 h-4 mr-2 ${isGenerating ? 'animate-spin' : ''}`} />
+                {isGenerating ? "Crafting..." : "Generate AI"}
+              </div>
+            </GlareHover>
             <button onClick={handleLaunch} disabled={isLaunching || questions.length < 3 || !coreAddress || !eSpaceAddress} className="flex-1 rounded-xl bg-[#42D293] px-5 py-3.5 text-sm text-black font-extrabold hover:bg-[#34b87e] transition-colors shadow-[0_0_20px_rgba(66,210,147,0.4)] focus:outline-none focus:ring-2 focus:ring-[#42D293]/50 disabled:opacity-50 disabled:bg-[#42D293]/50 disabled:shadow-none min-h-[50px]">
               {isLaunching ? "Publishing..." : "Launch"}
             </button>
@@ -387,7 +423,15 @@ export function CreateBountyForm() {
           {isGenerating ? (
             <span className="animate-pulse">✨ AI is crafting your survey questions...</span>
           ) : questions.length > 0 ? (
-            <span>✨ {questions.length} Questions Generated ({selectCount} Select, {textInputCount} Text)</span>
+            <span>
+              ✨ {questions.length} Questions Generated (
+              {[
+                selectCount > 0 && `${selectCount} Select`,
+                textInputCount > 0 && `${textInputCount} Text`,
+                ratingCount > 0 && `${ratingCount} Rating`
+              ].filter(Boolean).join(", ")}
+              )
+            </span>
           ) : (
             <span className="opacity-60 font-medium">✨ Ready to generate survey questions with AI.</span>
           )}
