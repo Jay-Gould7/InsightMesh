@@ -55,31 +55,90 @@ function hydrateBounty(bounty: any): any {
   };
 }
 
-export async function listVisibleBounties() {
-  const bounties = await prisma.bounty.findMany({
-    where: {
-      status: {
-        in: [BountyStatus.ACTIVE, BountyStatus.ANALYZING, BountyStatus.READY_TO_SETTLE, BountyStatus.SETTLED],
-      },
-    },
-    orderBy: { createdAt: "desc" },
-    include: {
-      analysis: true,
-      scoreSnapshot: {
-        include: {
-          entries: {
-            include: { submission: true },
-            orderBy: [{ totalPoints: "desc" }, { submissionId: "asc" }],
+export async function listVisibleBounties(options?: { search?: string; status?: BountyStatus; page?: number; pageSize?: number }) {
+  const { search, status, page = 1, pageSize = 10 } = options ?? {};
+  const skip = (page - 1) * pageSize;
+
+  const where: any = {
+    status: status
+      ? { equals: status }
+      : {
+          in: [BountyStatus.ACTIVE, BountyStatus.ANALYZING, BountyStatus.READY_TO_SETTLE, BountyStatus.SETTLED],
+        },
+  };
+
+  if (search) {
+    where.OR = [{ title: { contains: search } }, { description: { contains: search } }];
+  }
+
+  const [bounties, totalCount, statusCounts] = await Promise.all([
+    prisma.bounty.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: pageSize,
+      include: {
+        analysis: true,
+        scoreSnapshot: {
+          include: {
+            entries: {
+              include: { submission: true },
+              orderBy: [{ totalPoints: "desc" }, { submissionId: "asc" }],
+            },
           },
         },
+        submissions: {
+          orderBy: { createdAt: "asc" },
+        },
       },
-      submissions: {
-        orderBy: { createdAt: "asc" },
+    }),
+    prisma.bounty.count({ where }),
+    prisma.bounty.groupBy({
+      by: ["status"],
+      where: {
+        status: {
+          in: [BountyStatus.ACTIVE, BountyStatus.ANALYZING, BountyStatus.READY_TO_SETTLE, BountyStatus.SETTLED],
+        },
+      },
+      _count: true,
+    }),
+  ]);
+
+  const counts: Record<string, number> = {
+    ACTIVE: 0,
+    ANALYZING: 0,
+    READY_TO_SETTLE: 0,
+    SETTLED: 0,
+    TOTAL_SUBMISSIONS: 0,
+  };
+
+  statusCounts.forEach((sc) => {
+    counts[sc.status] = sc._count;
+  });
+
+  // Get global submission count (approximate or precise)
+  const totalSubmissions = await prisma.submission.count({
+    where: {
+      bounty: {
+        status: {
+          in: [BountyStatus.ACTIVE, BountyStatus.ANALYZING, BountyStatus.READY_TO_SETTLE, BountyStatus.SETTLED],
+        },
       },
     },
   });
 
-  return bounties.map((bounty) => hydrateBounty(bounty));
+  return {
+    bounties: bounties.map((bounty) => hydrateBounty(bounty)),
+    totalCount,
+    totalPages: Math.ceil(totalCount / pageSize),
+    stats: {
+      ACTIVE: (counts.ACTIVE || 0) as number,
+      ANALYZING: (counts.ANALYZING || 0) as number,
+      READY_TO_SETTLE: (counts.READY_TO_SETTLE || 0) as number,
+      SETTLED: (counts.SETTLED || 0) as number,
+      submissions: totalSubmissions,
+    },
+  };
 }
 
 export async function getBountyDetail(id: number) {

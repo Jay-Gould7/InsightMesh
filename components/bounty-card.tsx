@@ -14,9 +14,10 @@ export function BountyCard({ bounty }: { bounty: any }) {
         </div>
         <StatusPill status={bounty.status} />
       </div>
-      <div className="mt-6 grid gap-4 text-sm text-stone-300 md:grid-cols-4">
+      <div className="mt-6 grid gap-4 text-sm text-stone-300 md:grid-cols-5">
         <div><p className="text-xs uppercase tracking-[0.3em] text-stone-500">Reward</p><p className="mt-2 text-lg font-medium text-white">{formatTokenAmount(bounty.rewardAmount)} USDT0</p></div>
         <div><p className="text-xs uppercase tracking-[0.3em] text-stone-500">Deadline</p><p className="mt-2 text-lg font-medium text-white">{formatDate(bounty.deadline)}</p></div>
+        <div><p className="text-xs uppercase tracking-[0.3em] text-stone-500">Published</p><p className="mt-2 text-lg font-medium text-white">{formatDate(bounty.createdAt)}</p></div>
         <div><p className="text-xs uppercase tracking-[0.3em] text-stone-500">Responses</p><p className="mt-2 text-lg font-medium text-white">{bounty.submissions?.length ?? 0}</p></div>
         <div><p className="text-xs uppercase tracking-[0.3em] text-stone-500">Creator</p><p className="mt-2 text-lg font-medium text-white">{truncateAddress(bounty.creatorEspaceAddress ?? bounty.creatorCoreAddress)}</p></div>
       </div>

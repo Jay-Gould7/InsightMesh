@@ -4,8 +4,9 @@ import { Plus, Trash2, ChevronDown, ChevronUp, MessageSquareText, CircleCheck, C
 import { useState, type Dispatch, type SetStateAction } from "react";
 
 import AnimatedList from "@/components/reactbits/AnimatedList";
-import { createBlankQuestion, formatQuestionTypeLabel, isSelectQuestionType, QUESTION_TYPE_OPTIONS } from "@/lib/survey";
+import { createBlankQuestion, formatQuestionTypeLabel, isSelectQuestionType } from "@/lib/survey";
 import Dock from "./reactbits/Dock";
+import { QuestionTypeSelect } from "@/components/ui/question-type-select";
 import type { SurveyQuestion, SurveyQuestionType } from "@/lib/types";
 
 type SurveyBuilderProps = {
@@ -147,29 +148,22 @@ export function SurveyBuilder({ questions, setQuestions }: SurveyBuilderProps) {
                       </div>
 
                       <div className="grid gap-4 md:grid-cols-2 mb-4">
-                        <label className="space-y-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                          <span>Prompt</span>
+                        <div className="space-y-1.5">
+                          <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Prompt</span>
                           <input
                             className="w-full bg-white/[0.03] border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] backdrop-blur-md rounded-xl px-4 py-3 focus:bg-white/[0.05] focus:border-[#42D293]/50 focus:ring-1 focus:ring-[#42D293]/50 text-sm text-zinc-200 outline-none transition-all"
                             value={question.label}
                             onChange={(event) => updateQuestion(questionIndex, (current) => ({ ...current, label: event.target.value }))}
                             placeholder="What do you want participants to answer?"
                           />
-                        </label>
-                        <label className="space-y-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                          <span>Input type</span>
-                          <select
-                            className="w-full bg-white/[0.03] border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] backdrop-blur-md rounded-xl px-4 py-3 focus:bg-white/[0.05] focus:border-[#42D293]/50 focus:ring-1 focus:ring-[#42D293]/50 text-sm text-zinc-200 outline-none transition-all appearance-none cursor-pointer"
+                        </div>
+                        <div className="space-y-1.5">
+                          <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Input type</span>
+                          <QuestionTypeSelect
                             value={question.type}
-                            onChange={(event) => setQuestionType(questionIndex, event.target.value as SurveyQuestionType)}
-                          >
-                            {QUESTION_TYPE_OPTIONS.map((option) => (
-                              <option key={option.value} value={option.value} className="bg-[#09120d]">
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
+                            onChange={(type) => setQuestionType(questionIndex, type)}
+                          />
+                        </div>
                       </div>
 
                       <div className="grid gap-4 md:grid-cols-[1fr_auto] mb-4">

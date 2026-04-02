@@ -4,7 +4,7 @@ import { env, hasCoreContractConfig, hasRewardVaultConfig } from "@/lib/env";
 import { createBountySchema } from "@/lib/validators";
 
 export async function GET() {
-  const bounties = await listVisibleBounties();
+  const { bounties } = await listVisibleBounties();
   return Response.json({ bounties });
 }
 

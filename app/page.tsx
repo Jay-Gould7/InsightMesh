@@ -4,7 +4,7 @@ import { BountyCard } from "@/components/bounty-card";
 import { listVisibleBounties } from "@/lib/db/queries";
 
 export default async function HomePage() {
-  const bounties = await listVisibleBounties();
+  const { bounties } = await listVisibleBounties();
 
   return (
     <div className="space-y-10">
