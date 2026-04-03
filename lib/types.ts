@@ -46,6 +46,7 @@ export type AnalysisPayload = {
   duplicates: number[][];
   highlights: InsightHighlight[];
   scoreBreakdown: ScoreBreakdownEntry[];
+  qualityRatings: Record<number, number>;
 };
 
 export type CreateBountyInput = {

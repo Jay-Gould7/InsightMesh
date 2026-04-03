@@ -2,7 +2,6 @@
 
 import { useFluentWallet } from "@/components/providers/fluent-provider";
 import { SubmissionDetail } from "@/components/submission-detail";
-import { SupportButton } from "@/components/support-button";
 import type { CoreSpaceConfig, SurveyQuestion } from "@/lib/types";
 
 type SubmissionListProps = {
@@ -50,13 +49,6 @@ export function SubmissionList({ bounty, coreConfig }: SubmissionListProps) {
                 submission={submission}
                 questions={bounty.questions}
               />
-              <SupportButton
-                bountyId={bounty.id}
-                chainBountyId={bounty.chainBountyId}
-                submissionId={submission.id}
-                chainSubmissionId={submission.coreSubmissionId}
-                coreConfig={coreConfig}
-              />
             </div>
           ))}
         </div>
@@ -69,16 +61,6 @@ export function SubmissionList({ bounty, coreConfig }: SubmissionListProps) {
                   <p className="text-xs uppercase tracking-[0.3em] text-stone-500">Submission #{submission.id}</p>
                   <p className="mt-2 text-lg font-medium text-white">{submission.summary}</p>
                 </div>
-                <div className="rounded-full bg-white/5 px-3 py-1 text-sm text-stone-300">{submission.supportCount} supports</div>
-              </div>
-              <div className="mt-5">
-                <SupportButton
-                  bountyId={bounty.id}
-                  chainBountyId={bounty.chainBountyId}
-                  submissionId={submission.id}
-                  chainSubmissionId={submission.coreSubmissionId}
-                  coreConfig={coreConfig}
-                />
               </div>
             </article>
           ))}

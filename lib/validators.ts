@@ -51,13 +51,6 @@ export const submissionSchema = z.object({
   coreTxHash: z.string().min(8),
 });
 
-export const supportSchema = z.object({
-  bountyId: z.number().int().positive(),
-  submissionId: z.number().int().positive(),
-  supporterCoreAddress: z.string().min(8),
-  coreTxHash: z.string().min(8),
-});
-
 export const settlementSchema = z.object({
   bountyId: z.number().int().positive(),
   snapshotKey: z.string().min(8),

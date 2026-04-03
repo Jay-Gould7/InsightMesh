@@ -314,7 +314,9 @@ export function CreateBountyForm() {
         <div className="absolute bottom-[10%] right-[10%] w-[600px] h-[600px] bg-[#00F0FF]/5 rounded-full blur-[150px] pointer-events-none z-[-1]" />
         {/* LEFT PANE */}
       <div className="w-1/2 sticky top-24 h-[calc(100vh-8.5rem)] pr-8 border-r border-white/10 flex flex-col">
-        <h1 className="text-3xl font-extrabold tracking-tight text-white">Create Bounty Survey</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight text-white">
+          Create Bounty Survey
+        </h1>
         
         <div className="flex mt-3 mb-3 gap-3">
           <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] font-mono text-zinc-400 tracking-wide">

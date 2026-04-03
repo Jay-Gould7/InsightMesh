@@ -12,7 +12,6 @@ type SubmissionDetailProps = {
     answers: Record<string, unknown>;
     submitterCoreAddress: string;
     payoutAddress: string;
-    supportCount: number;
     createdAt: string;
   };
   questions: SurveyQuestion[];

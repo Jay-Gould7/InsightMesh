@@ -9,6 +9,7 @@ import {
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import StarBorder from "@/components/reactbits/StarBorder";
+import BorderGlow from "@/components/reactbits/BorderGlow";
 
 import { useESpaceWallet } from "@/components/providers/espace-provider";
 import { useFluentWallet } from "@/components/providers/fluent-provider";
@@ -351,39 +352,52 @@ export function WalletHub({ coreNetworkId, eSpaceChainId }: WalletHubProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -5, transition: { duration: 0.2 } }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="absolute right-0 mt-2 w-80 bg-[#0A0A0A]/80 backdrop-blur-[40px] border border-white/10 shadow-[0_24px_48px_rgba(0,0,0,0.6),_inset_0_1px_1px_rgba(255,255,255,0.2),_inset_0_0_20px_rgba(255,255,255,0.02)] rounded-3xl p-5 z-50 origin-top-right"
+            className="absolute right-0 mt-2 w-80 z-50 origin-top-right"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-2">
-              <span className="text-sm font-semibold text-white tracking-wide">Wallets</span>
-              <button onClick={handleRefresh} disabled={isRefreshing} className="text-zinc-400 hover:text-white transition-colors disabled:opacity-50">
-                <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
-              </button>
-            </div>
+            <BorderGlow
+              edgeSensitivity={30}
+              glowColor="150 80 60"
+              backgroundColor="#0A0A0A"
+              borderRadius={28}
+              glowRadius={40}
+              glowIntensity={0.95}
+              coneSpread={25}
+              animated={false}
+              colors={["#42D293", "#34d399", "#22c55e"]}
+              className="w-full p-5"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-2">
+                <span className="text-sm font-semibold text-white tracking-wide">Wallets</span>
+                <button onClick={handleRefresh} disabled={isRefreshing} className="text-zinc-400 hover:text-white transition-colors disabled:opacity-50">
+                  <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                </button>
+              </div>
 
-            <div className="flex flex-col">
-              <WalletPanel
-                label="Core"
-                accent="bg-[#42D293] text-[#42D293]"
-                address={coreAddress}
-                network={coreNetwork}
-                helper=""
-                connect={connectCore}
-                disconnect={disconnectCore}
-              />
-              <WalletPanel
-                label="eSpace"
-                accent="bg-cyan-400 text-cyan-400"
-                address={eSpaceAddress}
-                network={eSpaceNetwork}
-                helper=""
-                walletName={eSpaceWalletName}
-                walletId={eSpaceWalletId}
-                walletOptions={eSpaceWallets}
-                selectWallet={selectESpaceWallet}
-                connect={connectESpace}
-                disconnect={disconnectESpace}
-              />
-            </div>
+              <div className="flex flex-col">
+                <WalletPanel
+                  label="Core"
+                  accent="bg-[#42D293] text-[#42D293]"
+                  address={coreAddress}
+                  network={coreNetwork}
+                  helper=""
+                  connect={connectCore}
+                  disconnect={disconnectCore}
+                />
+                <WalletPanel
+                  label="eSpace"
+                  accent="bg-cyan-400 text-cyan-400"
+                  address={eSpaceAddress}
+                  network={eSpaceNetwork}
+                  helper=""
+                  walletName={eSpaceWalletName}
+                  walletId={eSpaceWalletId}
+                  walletOptions={eSpaceWallets}
+                  selectWallet={selectESpaceWallet}
+                  connect={connectESpace}
+                  disconnect={disconnectESpace}
+                />
+              </div>
+            </BorderGlow>
           </motion.div>
         )}
       </AnimatePresence>

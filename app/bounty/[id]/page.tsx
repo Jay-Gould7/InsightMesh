@@ -5,14 +5,24 @@ import { StatusPill } from "@/components/status-pill";
 import { SubmissionList } from "@/components/submission-list";
 import { SurveyForm } from "@/components/survey-form";
 import { CreatorLinks } from "@/components/creator-links";
+import PillNav from "@/components/reactbits/PillNav";
+import { BackButton } from "@/components/back-button";
 import { getBountyDetail } from "@/lib/db/queries";
 import { env } from "@/lib/env";
 import { formatDate } from "@/lib/utils";
 
-export default async function BountyDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolved = await params;
-  const bounty = await getBountyDetail(Number(resolved.id));
+export default async function BountyDetailPage({ 
+  params, 
+  searchParams 
+}: { 
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const [resolvedParams, resolvedSearchParams] = await Promise.all([params, searchParams]);
+  const bounty = await getBountyDetail(Number(resolvedParams.id));
   if (!bounty) notFound();
+
+  const activeTab = resolvedSearchParams.tab || "respond";
 
   const coreConfig = {
     mode: env.demoMode ? "demo" : "wallet",
@@ -22,6 +32,13 @@ export default async function BountyDetailPage({ params }: { params: Promise<{ i
     submissionRegistryAddress: env.coreSubmissionAddress,
     rewardDecimals: 6,
   } as const;
+
+  const navItems = [
+    { label: "Respond", href: `/bounty/${bounty.id}?tab=respond` },
+    { label: "Submissions", href: `/bounty/${bounty.id}?tab=submissions` },
+  ];
+
+  const activeHref = `/bounty/${bounty.id}?tab=${activeTab}`;
 
   return (
     <div className="space-y-8">
@@ -42,9 +59,32 @@ export default async function BountyDetailPage({ params }: { params: Promise<{ i
         <CreatorLinks bountyId={bounty.id} creatorCoreAddress={bounty.creatorCoreAddress} />
       </section>
 
-      <SurveyForm bounty={bounty} coreConfig={coreConfig} />
+      <div className="flex flex-wrap items-center justify-center gap-4 md:justify-start">
+        <BackButton />
+        <div className="flex items-center">
+          <PillNav
+            logo=""
+            items={navItems}
+            activeHref={activeHref}
+            bgColor="rgba(255, 255, 255, 0.02)"
+            baseColor="rgba(255, 255, 255, 0.5)"
+            pillColor="rgba(255, 255, 255, 0.05)"
+            hoverColor="#a3e635"
+            hoveredPillTextColor="#07130d"
+            pillTextColor="rgba(255, 255, 255, 0.7)"
+            className="scale-90 origin-left"
+            initialLoadAnimation={false}
+          />
+        </div>
+      </div>
 
-      <SubmissionList bounty={bounty} coreConfig={coreConfig} />
+      <div className="min-h-[400px]">
+        {activeTab === "respond" ? (
+          <SurveyForm bounty={bounty} coreConfig={coreConfig} />
+        ) : (
+          <SubmissionList bounty={bounty} coreConfig={coreConfig} />
+        )}
+      </div>
     </div>
   );
 }

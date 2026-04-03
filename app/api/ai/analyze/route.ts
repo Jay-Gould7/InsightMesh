@@ -26,7 +26,6 @@ export async function POST(request: Request) {
       bounty.prompt,
       bounty.submissions.map((submission: any) => ({
         id: submission.id,
-        supportCount: submission.supportCount,
         createdAt: submission.createdAt,
         text: submission.summary ?? JSON.stringify(submission.answers),
       })),

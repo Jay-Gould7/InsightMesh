@@ -149,7 +149,6 @@ export async function getBountyDetail(id: number) {
       submissions: {
         include: {
           scoreEntry: true,
-          receivedSupports: true,
         },
         orderBy: { createdAt: "asc" },
       },
@@ -272,21 +271,6 @@ export async function createSubmission(input: {
       coreSubmissionId: input.coreSubmissionId,
       coreTxHash: input.coreTxHash,
     },
-  });
-}
-
-export async function createSupport(input: { bountyId: number; submissionId: number; supporterCoreAddress: string }) {
-  return prisma.$transaction(async (tx) => {
-    const support = await tx.support.create({
-      data: {
-        bountyId: input.bountyId,
-        submissionId: input.submissionId,
-        supporterCoreAddress: input.supporterCoreAddress,
-      },
-    });
-
-    await tx.submission.update({ where: { id: input.submissionId }, data: { supportCount: { increment: 1 } } });
-    return support;
   });
 }
 

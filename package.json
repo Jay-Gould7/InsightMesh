@@ -27,6 +27,7 @@
     "ogl": "^1.0.11",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-router-dom": "^7.14.0",
     "tailwind-merge": "^3.3.0",
     "viem": "^2.37.0",
     "zod": "^3.24.2"

@@ -25,27 +25,29 @@ export async function POST(request: Request) {
 
     await markAnalyzing(bounty.id);
 
+    // Step 1: AI-driven semantic analysis (clustering + quality ratings)
     const analysis = await analyzeSubmissions(
       bounty.title,
       bounty.prompt,
       bounty.submissions.map((submission: any) => ({
         id: submission.id,
-        supportCount: submission.supportCount,
         createdAt: submission.createdAt,
         text: submission.summary ?? JSON.stringify(submission.answers),
       })),
     );
 
+    // Step 2: Build score breakdown using AI quality ratings
     const scoring = buildScoreBreakdown(
       bounty.submissions.map((submission: any) => ({
         id: submission.id,
         submitterCoreAddress: submission.submitterCoreAddress,
         payoutAddress: submission.payoutAddress,
         summary: submission.summary ?? JSON.stringify(submission.answers),
-        supportCount: submission.supportCount,
+        createdAt: submission.createdAt,
       })),
       analysis.clusters,
       analysis.highlights,
+      analysis.qualityRatings,
       bounty.rewardAmount,
     );
 
@@ -72,6 +74,7 @@ export async function POST(request: Request) {
       clusters: analysis.clusters,
       duplicates: analysis.duplicates,
       highlights: analysis.highlights,
+      qualityRatings: analysis.qualityRatings,
       scoreBreakdown: scoring.entries,
     });
   } catch (error) {
