@@ -34,32 +34,32 @@ export function BackButton() {
       },
     },
     arrow: {
-      initial: { opacity: 0, x: -15, scale: 0.5, width: 0, marginRight: 0 },
+      initial: { opacity: 0, x: -10, scale: 0.5, width: 0, marginRight: 0 },
       hover: { 
         opacity: 1, 
-        x: 0, 
+        x: -10, 
         scale: 1, 
-        width: "auto",
+        width: 24, // Matches total shift needed
         marginRight: 8,
         transition: jellyTransition
       },
     },
     text: {
-      initial: { x: 0, color: "#a8a29e" }, // stone-400
+      initial: { x: 2, color: "#a8a29e" }, // Fixed color, no relative x needed as layout handles shift
       hover: { 
-        x: 4, // Subtle shift to align with dot's original center
+        x: -10, 
         color: "#000000", // Pure black
         transition: jellyTransition 
       },
     },
     dot: {
-      initial: { opacity: 1, scale: 1, width: "auto", marginLeft: 10 },
+      initial: { opacity: 1, scale: 1, width: 16, marginLeft: 8 },
       hover: { 
         opacity: 0, 
-        scale: 0, 
+        scale: 0,
         width: 0,
         marginLeft: 0,
-        transition: { duration: 0.2 } 
+        transition: jellyTransition 
       },
     },
   } as const;
@@ -70,20 +70,20 @@ export function BackButton() {
         initial="initial"
         whileHover="hover"
         animate="initial"
-        className="relative flex h-[36px] px-[18px] items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white/5 text-[16px] font-semibold uppercase tracking-[0.2px] transition-all duration-300 isolate cursor-pointer"
+        className="relative flex h-[36px] w-[116px] flex-none items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white/5 text-[16px] font-semibold uppercase tracking-[0.2px] isolate cursor-pointer"
       >
         {/* Layer 0: Background Expansion (Origins from dot position) */}
         <motion.div
           variants={variants.bgFill}
-          className="absolute right-[22px] top-1/2 z-0 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-[#a3e635]"
+          className="absolute right-[31px] top-1/2 z-0 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-[#a3e635]"
           style={{ transformOrigin: "center" }}
         />
 
         {/* Layer 1: Foreground Content */}
-        <div className="relative z-10 flex items-center justify-center pointer-events-none">
+        <div className="relative z-10 flex w-full items-center justify-center pointer-events-none px-[18px]">
           
           {/* Arrow Chevron */}
-          <motion.div variants={variants.arrow} className="mr-1.5 origin-right text-black">
+          <motion.div variants={variants.arrow} className="flex items-center justify-center origin-right text-black">
             <ChevronLeft className="h-5 w-5 stroke-[3px]" />
           </motion.div>
 
@@ -92,11 +92,13 @@ export function BackButton() {
             Back
           </motion.span>
 
-          {/* Indicator Dot */}
+          {/* Indicator Dot Container */}
           <motion.div
             variants={variants.dot}
-            className="ml-2.5 h-1.5 w-1.5 rounded-full bg-[#a3e635] shadow-[0_0_8px_rgba(163,230,53,0.4)]"
-          />
+            className="flex items-center justify-center"
+          >
+            <div className="h-1.5 w-1.5 rounded-full bg-[#a3e635] shadow-[0_0_8px_rgba(163,230,53,0.4)]" />
+          </motion.div>
         </div>
       </motion.div>
     </Link>
