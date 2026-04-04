@@ -56,26 +56,28 @@ export default async function BountyDetailPage({
           <div><p className="text-xs uppercase tracking-[0.3em] text-stone-500">Reward</p><p className="mt-2 text-white">{bounty.rewardAmount} USDT0</p></div>
           <div><p className="text-xs uppercase tracking-[0.3em] text-stone-500">Insight status</p><p className="mt-2 text-white">{bounty.analysisStatus}</p></div>
         </div>
-        <CreatorLinks bountyId={bounty.id} creatorCoreAddress={bounty.creatorCoreAddress} />
       </section>
 
-      <div className="flex flex-wrap items-center justify-center gap-4 md:justify-start">
-        <BackButton />
-        <div className="flex items-center">
-          <PillNav
-            logo=""
-            items={navItems}
-            activeHref={activeHref}
-            bgColor="rgba(255, 255, 255, 0.02)"
-            baseColor="rgba(255, 255, 255, 0.5)"
-            pillColor="rgba(255, 255, 255, 0.05)"
-            hoverColor="#a3e635"
-            hoveredPillTextColor="#07130d"
-            pillTextColor="rgba(255, 255, 255, 0.7)"
-            className="scale-90 origin-left"
-            initialLoadAnimation={false}
-          />
+      <div className="flex flex-wrap items-center gap-y-3 gap-x-4 justify-between">
+        <div className="flex flex-wrap items-center gap-4">
+          <BackButton />
+          <div className="flex items-center">
+            <PillNav
+              logo=""
+              items={navItems}
+              activeHref={activeHref}
+              bgColor="rgba(255, 255, 255, 0.02)"
+              baseColor="rgba(255, 255, 255, 0.5)"
+              pillColor="rgba(255, 255, 255, 0.05)"
+              hoverColor="#a3e635"
+              hoveredPillTextColor="#07130d"
+              pillTextColor="rgba(255, 255, 255, 0.7)"
+              className="scale-90 origin-left"
+              initialLoadAnimation={false}
+            />
+          </div>
         </div>
+        <CreatorLinks bountyId={bounty.id} creatorCoreAddress={bounty.creatorCoreAddress} />
       </div>
 
       <div className="min-h-[400px]">

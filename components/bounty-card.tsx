@@ -39,18 +39,32 @@ export function BountyCard({ bounty }: { bounty: any }) {
                 </div>
               </div>
 
-              {/* Hover: Action buttons */}
+              {/* Hover: Action buttons — interaction pattern aligned with creator-links */}
               <div className="absolute inset-0 flex flex-col items-end gap-2 opacity-0 pointer-events-none transition-opacity duration-200 group-hover:opacity-100 group-hover:pointer-events-auto">
-                <span className="flex items-center gap-1.5 rounded-xl bg-lime-300/15 border border-lime-300/25 px-4 py-2 text-xs font-semibold text-lime-300 transition-colors hover:bg-lime-300/25">
-                  Open
-                  <ArrowUpRight className="h-3 w-3" />
-                </span>
+                <Link
+                  href={`/bounty/${bounty.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="group/open relative inline-flex min-h-[36px] items-center justify-center gap-1.5 overflow-hidden rounded-xl bg-lime-300 px-4 py-2 text-xs font-semibold text-black shadow-[0_0_20px_rgba(163,230,53,0.22)] outline-none transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:-translate-y-0.5 hover:scale-[1.03] hover:bg-lime-200 hover:shadow-[0_0_36px_rgba(163,230,53,0.45)] active:translate-y-0 active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-lime-300/70"
+                >
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-0 transition duration-500 ease-out group-hover/open:translate-x-full group-hover/open:opacity-100"
+                  />
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    Open
+                    <ArrowUpRight className="h-3 w-3 transition-transform duration-300 group-hover/open:translate-x-0.5 group-hover/open:-translate-y-0.5" />
+                  </span>
+                </Link>
                 <Link
                   href={`/bounty/${bounty.id}/insights`}
                   onClick={(e) => e.stopPropagation()}
-                  className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-xs font-medium text-stone-400 transition-all hover:border-white/15 hover:text-white hover:bg-white/[0.06]"
+                  className="group/in relative inline-flex min-h-[36px] items-center justify-center overflow-hidden rounded-xl border border-white/[0.12] bg-white/[0.04] px-4 py-2 text-xs font-medium text-stone-200 shadow-sm outline-none transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:-translate-y-0.5 hover:scale-[1.03] hover:border-lime-300/40 hover:bg-lime-300/[0.08] hover:text-white hover:shadow-[0_0_28px_rgba(163,230,53,0.18)] active:translate-y-0 active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-lime-300/40"
                 >
-                  Insights
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-lime-300/25 to-transparent opacity-0 transition duration-500 ease-out group-hover/in:translate-x-full group-hover/in:opacity-100"
+                  />
+                  <span className="relative z-10">Insights</span>
                 </Link>
               </div>
             </div>
