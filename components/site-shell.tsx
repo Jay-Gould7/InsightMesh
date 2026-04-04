@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Hexagon } from "lucide-react";
 
-import Shuffle from "./reactbits/shuffle";
+import LazyShuffle from "./reactbits/LazyShuffle";
 import GooeyNav from "./reactbits/GooeyNav";
 import { WalletHub } from "@/components/wallet-hub";
 import { env } from "@/lib/env";
@@ -19,7 +19,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-2 text-white font-bold text-xl tracking-wide">
             <Hexagon className="text-[#42D293] w-6 h-6" />
-            <Shuffle
+            <LazyShuffle
               text="InsightMesh"
               className={`${pressStart2P.className} text-[20px] mt-1 normal-case tracking-normal`}
               shuffleDirection="down"

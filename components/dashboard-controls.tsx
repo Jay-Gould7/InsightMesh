@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Search, X, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Plus } from "lucide-react";
 import GlassSurface from "./reactbits/GlassSurface";
-import PillNav from "./reactbits/PillNav";
+import LazyPillNav from "./reactbits/LazyPillNav";
 
 import { BountyStatus } from "@prisma/client";
 
@@ -108,14 +108,13 @@ export function DashboardControls({ totalCount, totalPages, currentPage }: Dashb
       {/* Search + Filter Row UI */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center">
         {/* Search Input */}
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-500 pointer-events-none" />
+        <div className="relative flex-1 max-w-[17rem]">
           <input
             type="text"
             placeholder="Search campaigns..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] py-2.5 pl-11 pr-10 text-sm text-white placeholder-stone-600 outline-none backdrop-blur-xl transition-all focus:border-lime-300/40 focus:bg-white/[0.05] focus:shadow-[0_0_20px_rgba(163,230,53,0.06)]"
+            className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 pr-10 text-sm text-white placeholder-stone-600 outline-none backdrop-blur-xl transition-all focus:border-lime-300/40 focus:bg-white/[0.05] focus:shadow-[0_0_20px_rgba(163,230,53,0.06)]"
           />
           {searchQuery && (
             <button
@@ -128,7 +127,7 @@ export function DashboardControls({ totalCount, totalPages, currentPage }: Dashb
         </div>
 
         {/* Filter Tabs - Now using PillNav for high-end animation */}
-        <PillNav
+        <LazyPillNav
           logo=""
           items={navItems}
           activeHref={activeHref}
