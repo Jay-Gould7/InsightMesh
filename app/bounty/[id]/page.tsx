@@ -6,6 +6,7 @@ import { SubmissionList } from "@/components/submission-list";
 import { SurveyForm } from "@/components/survey-form";
 import { CreatorLinks } from "@/components/creator-links";
 import PillNav from "@/components/reactbits/PillNav";
+import GlassSurface from "@/components/reactbits/GlassSurface";
 import { BackButton } from "@/components/back-button";
 import { getBountyDetail } from "@/lib/db/queries";
 import { env } from "@/lib/env";
@@ -58,26 +59,46 @@ export default async function BountyDetailPage({
         </div>
       </section>
 
-      <div className="flex flex-wrap items-center gap-y-3 gap-x-4 justify-between">
-        <div className="flex flex-wrap items-center gap-4">
-          <BackButton />
-          <div className="flex items-center">
-            <PillNav
-              logo=""
-              items={navItems}
-              activeHref={activeHref}
-              bgColor="rgba(255, 255, 255, 0.02)"
-              baseColor="rgba(255, 255, 255, 0.5)"
-              pillColor="rgba(255, 255, 255, 0.05)"
-              hoverColor="#a3e635"
-              hoveredPillTextColor="#07130d"
-              pillTextColor="rgba(255, 255, 255, 0.7)"
-              className="scale-90 origin-left"
-              initialLoadAnimation={false}
-            />
+      <div className="sticky top-16 z-40 -mx-6 px-6 py-4 transition-all duration-300">
+        <div className="absolute inset-0 -z-10 px-6 py-4">
+          <GlassSurface
+            width="100%"
+            height="100%"
+            borderRadius={50}
+            displace={0.5}
+            distortionScale={-180}
+            redOffset={0}
+            greenOffset={10}
+            blueOffset={20}
+            brightness={50}
+            opacity={0.93}
+            mixBlendMode="screen"
+          />
+        </div>
+
+        <div className="relative px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+            <div className="flex flex-wrap items-center gap-4">
+              <BackButton />
+              <div className="flex items-center">
+                <PillNav
+                  logo=""
+                  items={navItems}
+                  activeHref={activeHref}
+                  bgColor="rgba(255, 255, 255, 0.02)"
+                  baseColor="rgba(255, 255, 255, 0.5)"
+                  pillColor="rgba(255, 255, 255, 0.05)"
+                  hoverColor="#a3e635"
+                  hoveredPillTextColor="#07130d"
+                  pillTextColor="rgba(255, 255, 255, 0.7)"
+                  className="scale-90 origin-left"
+                  initialLoadAnimation={false}
+                />
+              </div>
+            </div>
+            <CreatorLinks bountyId={bounty.id} creatorCoreAddress={bounty.creatorCoreAddress} />
           </div>
         </div>
-        <CreatorLinks bountyId={bounty.id} creatorCoreAddress={bounty.creatorCoreAddress} />
       </div>
 
       <div className="min-h-[400px]">
