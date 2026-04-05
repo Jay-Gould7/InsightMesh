@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { StatusPill } from "@/components/status-pill";
@@ -33,7 +32,7 @@ export default async function BountyDetailPage({
 
   return (
     <div className="space-y-8">
-      <section className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+      <section className="px-2 pt-2">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.35em] text-lime-300/70">Bounty detail</p>
@@ -43,9 +42,18 @@ export default async function BountyDetailPage({
           <StatusPill status={bounty.status} />
         </div>
         <div className="mt-6 flex flex-wrap gap-6 text-sm text-stone-300">
-          <div><p className="text-xs uppercase tracking-[0.3em] text-stone-500">Deadline</p><p className="mt-2 text-white">{formatDate(bounty.deadline)}</p></div>
-          <div><p className="text-xs uppercase tracking-[0.3em] text-stone-500">Reward</p><p className="mt-2 text-white">{bounty.rewardAmount} USDT0</p></div>
-          <div><p className="text-xs uppercase tracking-[0.3em] text-stone-500">Insight status</p><p className="mt-2 text-white">{bounty.analysisStatus}</p></div>
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-stone-500">Deadline</p>
+            <p className="mt-2 text-white">{formatDate(bounty.deadline)}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-stone-500">Reward</p>
+            <p className="mt-2 text-white">{bounty.rewardAmount} USDT0</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-stone-500">Insight status</p>
+            <p className="mt-2 text-white">{bounty.analysisStatus}</p>
+          </div>
         </div>
       </section>
 
