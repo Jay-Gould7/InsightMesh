@@ -107,6 +107,7 @@ const LightRays: React.FC<LightRaysProps> = ({
   const meshRef = useRef<Mesh | null>(null);
   const cleanupFunctionRef = useRef<(() => void) | null>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
@@ -133,6 +134,8 @@ const LightRays: React.FC<LightRaysProps> = ({
   useEffect(() => {
     if (!isVisible || !containerRef.current) return;
 
+    setIsReady(false);
+
     if (cleanupFunctionRef.current) {
       cleanupFunctionRef.current();
       cleanupFunctionRef.current = null;
@@ -152,8 +155,12 @@ const LightRays: React.FC<LightRaysProps> = ({
       rendererRef.current = renderer;
 
       const gl = renderer.gl;
+      gl.clearColor(0, 0, 0, 0);
       gl.canvas.style.width = '100%';
       gl.canvas.style.height = '100%';
+      gl.canvas.style.display = 'block';
+      gl.canvas.style.background = 'transparent';
+      gl.canvas.style.opacity = '0';
 
       while (containerRef.current.firstChild) {
         containerRef.current.removeChild(containerRef.current.firstChild);
@@ -329,6 +336,10 @@ void main() {
 
         try {
           renderer.render({ scene: mesh });
+          if (gl.canvas.style.opacity !== '1') {
+            gl.canvas.style.opacity = '1';
+            setIsReady(true);
+          }
           animationIdRef.current = requestAnimationFrame(loop);
         } catch (error) {
           console.warn('WebGL rendering error:', error);
@@ -351,12 +362,8 @@ void main() {
         if (renderer) {
           try {
             const canvas = renderer.gl.canvas;
-            const loseContextExt = renderer.gl.getExtension('WEBGL_lose_context');
-            if (loseContextExt) {
-              loseContextExt.loseContext();
-            }
-
             if (canvas && canvas.parentNode) {
+              canvas.style.opacity = '0';
               canvas.parentNode.removeChild(canvas);
             }
           } catch (error) {
@@ -448,7 +455,7 @@ void main() {
   return (
     <div
       ref={containerRef}
-      className={`w-full h-full pointer-events-none z-[3] overflow-hidden relative ${className}`.trim()}
+      className={`relative w-full h-full pointer-events-none z-[3] overflow-hidden transition-opacity duration-150 ${isReady ? 'opacity-100' : 'opacity-0'} ${className}`.trim()}
     />
   );
 };

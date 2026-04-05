@@ -166,9 +166,12 @@ export function SurveyForm({ bounty, coreConfig }: { bounty: any; coreConfig: Co
   }
 
   return (
-    <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+    <div
+      data-survey-form-root
+      className="relative overflow-hidden rounded-[2rem] border-2 border-[#35c04c]/44 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.025))] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.18),0_0_0_1px_rgba(53,192,76,0.18),0_0_44px_rgba(53,192,76,0.1)] backdrop-blur-xl"
+    >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,197,94,0.1),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(34,211,238,0.08),transparent_28%)]" />
-      <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#35c04c]/72 to-transparent" />
 
       <div className="relative space-y-8">
       <div className="grid gap-4 md:grid-cols-[72px_minmax(0,1fr)] md:items-start">
@@ -233,7 +236,10 @@ export function SurveyForm({ bounty, coreConfig }: { bounty: any; coreConfig: Co
 
       <div className="space-y-4">
           {questions.length === 0 ? (
-            <div className="rounded-[1.75rem] border border-white/10 bg-black/20 p-6 text-sm text-stone-400">
+            <div
+              data-survey-flow-target
+              className="rounded-[1.75rem] border border-white/10 bg-black/20 p-6 text-sm text-stone-400"
+            >
               No questions are available for this bounty yet.
             </div>
           ) : null}
@@ -250,6 +256,7 @@ export function SurveyForm({ bounty, coreConfig }: { bounty: any; coreConfig: Co
             return (
               <div
                 key={question.id}
+                data-survey-flow-target={index === 0 ? "true" : undefined}
                 className={`group relative overflow-hidden rounded-[1.75rem] border p-5 transition-all duration-300 sm:p-6 ${
                   answered
                     ? "border-lime-300/18 bg-lime-300/[0.045] shadow-[0_18px_42px_rgba(132,204,22,0.08)]"

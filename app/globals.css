@@ -4,9 +4,18 @@
   color-scheme: dark;
 }
 
+html {
+  min-height: 100%;
+  background: #071009;
+}
+
 body {
   min-height: 100vh;
   font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+  background:
+    radial-gradient(circle at top, rgba(153, 255, 126, 0.22), transparent 28%),
+    linear-gradient(180deg, #07130d 0%, #0d1b13 48%, #071009 100%);
+  color: rgb(245 245 244);
 }
 
 * {
