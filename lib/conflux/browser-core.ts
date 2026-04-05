@@ -2,6 +2,7 @@
 
 import { Interface, parseUnits } from "ethers";
 
+import { coreAddressesEqual } from "@/lib/conflux/address";
 import { bountyRegistryAbi, submissionRegistryAbi } from "@/lib/conflux/abis";
 import { bigintToRpcHex, callCoreRpc, rpcValueToBigInt, type RawCoreEstimate, type RawCoreStatus } from "@/lib/conflux/core-rpc";
 import type { CoreSpaceConfig } from "@/lib/types";
@@ -112,7 +113,7 @@ async function sendCoreTransaction(input: BrowserCoreInput) {
   const provider = getConfluxProvider();
   await ensureCoreNetwork(provider, input.expectedNetworkId);
   const accounts = await requestCoreAccounts(provider);
-  if (accounts[0].toLowerCase() !== input.from.toLowerCase()) {
+  if (!coreAddressesEqual(accounts[0], input.from)) {
     throw new Error("The connected Fluent account does not match the Core address in the form.");
   }
 

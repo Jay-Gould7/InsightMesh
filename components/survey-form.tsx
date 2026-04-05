@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
-import { Check, SendHorizontal, Star } from "lucide-react";
+import { Check, SendHorizontal, Star, X } from "lucide-react";
 
 import { useESpaceWallet } from "@/components/providers/espace-provider";
 import { useFluentWallet } from "@/components/providers/fluent-provider";
@@ -56,6 +56,7 @@ export function SurveyForm({ bounty, coreConfig }: { bounty: any; coreConfig: Co
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStage, setSubmitStage] = useState("");
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
   const lastSuggestedPayout = useRef("");
   const questions = useMemo(
     () => sanitizeSurveyQuestions(Array.isArray(bounty.questions) ? bounty.questions : []),
@@ -101,6 +102,7 @@ export function SurveyForm({ bounty, coreConfig }: { bounty: any; coreConfig: Co
 
   async function handleSubmit() {
     setError("");
+    setShowSuccessToast(false);
     setIsSubmitting(true);
 
     try {
@@ -156,6 +158,7 @@ export function SurveyForm({ bounty, coreConfig }: { bounty: any; coreConfig: Co
         throw new Error(payload.error ?? "Unable to submit feedback.");
       }
 
+      setShowSuccessToast(true);
       startTransition(() => router.refresh());
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Unable to submit feedback.");
@@ -244,6 +247,7 @@ export function SurveyForm({ bounty, coreConfig }: { bounty: any; coreConfig: Co
             </div>
           ) : null}
 
+          <div className="border-t border-white/8 divide-y divide-white/8">
           {questions.map((question, index) => {
             const selectedSingle = typeof answers[question.id] === "string" ? (answers[question.id] as string) : "";
             const selectedMany = Array.isArray(answers[question.id]) ? (answers[question.id] as string[]) : [];
@@ -257,35 +261,21 @@ export function SurveyForm({ bounty, coreConfig }: { bounty: any; coreConfig: Co
               <div
                 key={question.id}
                 data-survey-flow-target={index === 0 ? "true" : undefined}
-                className={`group relative overflow-hidden rounded-[1.75rem] border p-5 transition-all duration-300 sm:p-6 ${
-                  answered
-                    ? "border-lime-300/18 bg-lime-300/[0.045] shadow-[0_18px_42px_rgba(132,204,22,0.08)]"
-                    : "border-white/8 bg-black/15 hover:border-white/14 hover:bg-white/[0.03]"
-                }`}
+                className="group relative py-6 last:pb-0 sm:py-7"
               >
-                <div
-                  className={`pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 ${
-                    answered
-                      ? "bg-[radial-gradient(circle_at_top_right,rgba(132,204,22,0.1),transparent_40%)] opacity-100"
-                      : "group-hover:bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.05),transparent_35%)] group-hover:opacity-100"
-                  }`}
-                />
-
                 <div className="relative">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-xs uppercase tracking-[0.3em] text-stone-500">Q{index + 1}</p>
-                          <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-stone-400">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] uppercase tracking-[0.26em] text-stone-500">
+                          <p className="text-stone-300">Q{index + 1}</p>
+                          <span className="h-1 w-1 rounded-full bg-stone-700/90" />
+                          <span>
                             {questionTypeLabels[question.type]}
                           </span>
+                          <span className="h-1 w-1 rounded-full bg-stone-700/90" />
                           <span
-                            className={`rounded-full border px-3 py-1 text-[10px] uppercase tracking-[0.22em] ${
-                              question.required
-                                ? "border-lime-300/16 bg-lime-300/[0.08] text-lime-200"
-                                : "border-white/10 bg-white/[0.04] text-stone-500"
-                            }`}
+                            className={question.required ? "text-lime-200" : "text-stone-500"}
                           >
                             {question.required ? "Required" : "Optional"}
                           </span>
@@ -299,10 +289,8 @@ export function SurveyForm({ bounty, coreConfig }: { bounty: any; coreConfig: Co
                     </div>
 
                     <div
-                      className={`rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.22em] ${
-                        answered
-                          ? "border-lime-300/16 bg-lime-300/[0.08] text-lime-200"
-                          : "border-white/10 bg-white/[0.03] text-stone-500"
+                      className={`pt-0.5 text-[11px] uppercase tracking-[0.24em] ${
+                        answered ? "text-lime-200" : "text-stone-500"
                       }`}
                     >
                       {answered ? "Answered" : "Pending"}
@@ -452,6 +440,7 @@ export function SurveyForm({ bounty, coreConfig }: { bounty: any; coreConfig: Co
               </div>
             );
           })}
+          </div>
         </div>
 
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -496,6 +485,36 @@ export function SurveyForm({ bounty, coreConfig }: { bounty: any; coreConfig: Co
           </div>
         </div>
       </div>
+      {showSuccessToast ? (
+        <div className="fixed bottom-6 right-6 z-[90] w-[min(360px,calc(100vw-2rem))] rounded-[24px] border border-emerald-300/16 bg-[linear-gradient(180deg,rgba(10,24,16,0.96),rgba(10,10,10,0.94))] p-4 shadow-[0_24px_64px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
+          <button
+            type="button"
+            onClick={() => setShowSuccessToast(false)}
+            className="absolute right-3 top-3 rounded-full border border-white/10 bg-white/[0.04] p-1.5 text-zinc-400 transition-colors hover:border-white/15 hover:text-white"
+            aria-label="Dismiss success message"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+          <div className="pr-8">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-emerald-300/18 bg-emerald-400/12 text-emerald-200">
+                <Check className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200/75">
+                  Success
+                </p>
+                <p className="mt-1 text-base font-semibold text-white">
+                  Submission successful
+                </p>
+              </div>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-zinc-300">
+              Your feedback has been submitted successfully.
+            </p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

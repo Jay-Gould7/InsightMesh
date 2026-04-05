@@ -4,6 +4,7 @@ import Link from "next/link";
 import { type ReactNode } from "react";
 
 import { useFluentWallet } from "@/components/providers/fluent-provider";
+import { coreAddressesEqual } from "@/lib/conflux/address";
 
 type CreatorGateProps = {
   creatorCoreAddress: string;
@@ -24,7 +25,7 @@ export function CreatorGate({ creatorCoreAddress, bountyId, children }: CreatorG
     );
   }
 
-  const isCreator = address.toLowerCase() === creatorCoreAddress.toLowerCase();
+  const isCreator = coreAddressesEqual(address, creatorCoreAddress);
 
   if (!isCreator) {
     return (

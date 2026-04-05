@@ -463,7 +463,7 @@ export function CreateBountyForm() {
                   <AlertTriangle className="h-3.5 w-3.5" />
                 </div>
                 <div className="flex-1 pr-6">
-                  <p className="text-[13px] font-semibold text-rose-100">Launch Interrupted</p>
+                  <p className="text-[13px] font-semibold text-rose-100">Request Failed</p>
                   <p className="mt-0.5 text-[11px] text-rose-300/80 leading-snug">{formError}</p>
                 </div>
                 <button 
@@ -553,35 +553,30 @@ export function CreateBountyForm() {
       </div>
     </div>
       {launchError ? (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm">
-          <div className="relative w-full max-w-lg overflow-hidden rounded-[28px] border border-rose-400/18 bg-[linear-gradient(180deg,rgba(28,12,14,0.98),rgba(10,10,10,0.98))] p-6 shadow-[0_28px_80px_rgba(0,0,0,0.45)]">
-            <button
-              type="button"
-              onClick={() => setLaunchError("")}
-              className="absolute right-4 top-4 rounded-full border border-white/10 bg-white/5 p-2 text-zinc-400 transition-colors hover:border-white/15 hover:text-white"
-              aria-label="Close error dialog"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <div className="flex items-start gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-rose-400/18 bg-rose-500/12 text-rose-300">
-                <AlertTriangle className="h-5 w-5" />
+        <div className="fixed bottom-6 right-6 z-[80] w-[min(420px,calc(100vw-2rem))] rounded-[24px] border border-rose-400/18 bg-[linear-gradient(180deg,rgba(28,12,14,0.96),rgba(10,10,10,0.94))] p-4 shadow-[0_24px_64px_rgba(0,0,0,0.4)] backdrop-blur-2xl">
+          <button
+            type="button"
+            onClick={() => setLaunchError("")}
+            className="absolute right-3 top-3 rounded-full border border-white/10 bg-white/[0.04] p-1.5 text-zinc-400 transition-colors hover:border-white/15 hover:text-white"
+            aria-label="Dismiss publish error"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+          <div className="pr-8">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-rose-400/18 bg-rose-500/12 text-rose-300">
+                <AlertTriangle className="h-4 w-4" />
               </div>
-              <div className="pr-8">
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-rose-300/75">Publish Failed</p>
-                <h3 className="mt-2 text-2xl font-semibold text-white">The bounty was not published.</h3>
-                <p className="mt-3 text-sm leading-7 text-zinc-300">{launchError}</p>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-rose-300/75">
+                  Publish Failed
+                </p>
+                <p className="mt-1 text-base font-semibold text-white">
+                  The bounty was not published.
+                </p>
               </div>
             </div>
-            <div className="mt-6 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setLaunchError("")}
-                className="rounded-full border border-white/12 bg-white/6 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:border-white/20 hover:bg-white/10"
-              >
-                Close
-              </button>
-            </div>
+            <p className="mt-3 text-sm leading-6 text-zinc-300">{launchError}</p>
           </div>
         </div>
       ) : null}

@@ -1,5 +1,6 @@
 import { Interface } from "ethers";
 
+import { coreAddressesEqual } from "@/lib/conflux/address";
 import { fakeTxHash } from "@/lib/demo";
 import { submissionRegistryAbi } from "@/lib/conflux/abis";
 import { callCoreRpc, rpcValueToNumber, waitForCoreReceipt, type RawCoreReceipt, type RawCoreTransaction } from "@/lib/conflux/core-rpc";
@@ -53,11 +54,11 @@ export async function verifyCoreSubmission(input: {
     throw new Error("Core submit transaction failed.");
   }
 
-  if (!transaction.to || transaction.to.toLowerCase() !== env.coreSubmissionAddress.toLowerCase()) {
+  if (!transaction.to || !coreAddressesEqual(transaction.to, env.coreSubmissionAddress)) {
     throw new Error("Core submit transaction targeted the wrong registry.");
   }
 
-  if (transaction.from.toLowerCase() !== input.submitterCoreAddress.toLowerCase()) {
+  if (!coreAddressesEqual(transaction.from, input.submitterCoreAddress)) {
     throw new Error("Core submit transaction signer does not match the submitter address.");
   }
 
@@ -116,11 +117,11 @@ export async function verifyCoreSupport(input: {
     throw new Error("Core support transaction failed.");
   }
 
-  if (!transaction.to || transaction.to.toLowerCase() !== env.coreSubmissionAddress.toLowerCase()) {
+  if (!transaction.to || !coreAddressesEqual(transaction.to, env.coreSubmissionAddress)) {
     throw new Error("Core support transaction targeted the wrong registry.");
   }
 
-  if (transaction.from.toLowerCase() !== input.supporterCoreAddress.toLowerCase()) {
+  if (!coreAddressesEqual(transaction.from, input.supporterCoreAddress)) {
     throw new Error("Core support transaction signer does not match the supporter address.");
   }
 

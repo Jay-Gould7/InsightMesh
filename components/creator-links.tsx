@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BarChart3, Coins } from "lucide-react";
 
 import { useFluentWallet } from "@/components/providers/fluent-provider";
+import { coreAddressesEqual } from "@/lib/conflux/address";
 
 type CreatorLinksProps = {
   bountyId: number;
@@ -12,7 +13,7 @@ type CreatorLinksProps = {
 
 export function CreatorLinks({ bountyId, creatorCoreAddress }: CreatorLinksProps) {
   const { address } = useFluentWallet();
-  const isCreator = address && address.toLowerCase() === creatorCoreAddress.toLowerCase();
+  const isCreator = coreAddressesEqual(address, creatorCoreAddress);
 
   if (!isCreator) return null;
 
