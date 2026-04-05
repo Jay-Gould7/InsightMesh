@@ -168,10 +168,18 @@ export function DashboardControls({ totalCount, totalPages, currentPage }: Dashb
 
           <Link
             href="/bounty/new"
-            className="group flex items-center gap-2 rounded-full border border-lime-300/20 bg-lime-300/5 px-5 h-[40px] text-xs font-bold uppercase tracking-wider text-lime-300 backdrop-blur-xl transition-all hover:bg-lime-300/10 hover:border-lime-300/40 hover:shadow-[0_0_30px_rgba(163,230,53,0.1)]"
+            className="group relative inline-flex h-[40px] min-w-[114px] items-center justify-center overflow-hidden rounded-full border border-lime-300/20 bg-lime-300/[0.06] px-4 text-lime-300 backdrop-blur-xl shadow-[0_10px_24px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:-translate-y-0.5 hover:border-lime-300/38 hover:bg-lime-300/[0.1] hover:shadow-[0_16px_32px_rgba(0,0,0,0.18),0_0_32px_rgba(163,230,53,0.08),inset_0_1px_0_rgba(255,255,255,0.08)] active:translate-y-0 active:scale-[0.985] focus-visible:ring-2 focus-visible:ring-lime-300/35"
           >
-            <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
-            Launch Bounty
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_left,rgba(163,230,53,0.18),transparent_58%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            />
+            <span className="relative z-10 flex items-center gap-2">
+              <Plus className="h-[18px] w-[18px] stroke-[2.6px] transition-transform duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover:rotate-90 group-hover:scale-110" />
+              <span className="text-[13px] font-bold uppercase tracking-[0.26em] transition-transform duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover:translate-x-0.5">
+                New
+              </span>
+            </span>
           </Link>
         </div>
       </div>

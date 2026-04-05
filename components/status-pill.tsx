@@ -10,5 +10,5 @@ const toneByStatus: Record<string, string> = {
 };
 
 export function StatusPill({ status }: { status: string }) {
-  return <span className={cn("inline-flex rounded-full px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] ring-1", toneByStatus[status] ?? "bg-white/10 text-white ring-white/20")}>{status.replaceAll("_", " ")}</span>;
+  return <span className={cn("inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium uppercase tracking-[0.16em] ring-1", toneByStatus[status] ?? "bg-white/10 text-white ring-white/20")}>{status.replaceAll("_", " ")}</span>;
 }

@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Clock, Coins, Users, ArrowUpRight, Calendar } from "lucide-react";
+import { Clock, Coins, Users, ArrowUpRight, BarChart3, Calendar } from "lucide-react";
 
 import { StatusPill } from "@/components/status-pill";
 import { formatDate, formatTokenAmount, truncateAddress } from "@/lib/utils";
 
 export function BountyCard({ bounty }: { bounty: any }) {
   const router = useRouter();
+  const actionButtonBaseClass =
+    "relative inline-flex h-[38px] w-[136px] items-center justify-center overflow-hidden rounded-full px-4 text-[15px] font-semibold outline-none transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] active:translate-y-0 active:scale-[0.985] focus-visible:ring-2";
 
   return (
     <div
@@ -28,7 +30,7 @@ export function BountyCard({ bounty }: { bounty: any }) {
             </div>
 
             {/* Right: Swap zone — top-aligned with title */}
-            <div className="shrink-0 relative min-w-[170px] h-[64px]">
+            <div className="relative h-[82px] min-w-[152px] shrink-0">
               {/* Default: Status + Reward */}
               <div className="absolute inset-0 flex flex-col items-end gap-2 transition-opacity duration-200 group-hover:opacity-0 group-hover:pointer-events-none">
                 <StatusPill status={bounty.status} />
@@ -44,27 +46,44 @@ export function BountyCard({ bounty }: { bounty: any }) {
                 <Link
                   href={`/bounty/${bounty.id}`}
                   onClick={(e) => e.stopPropagation()}
-                  className="group/open relative inline-flex min-h-[36px] items-center justify-center gap-1.5 overflow-hidden rounded-xl bg-lime-300 px-4 py-2 text-xs font-semibold text-black shadow-[0_0_20px_rgba(163,230,53,0.22)] outline-none transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:-translate-y-0.5 hover:scale-[1.03] hover:bg-lime-200 hover:shadow-[0_0_36px_rgba(163,230,53,0.45)] active:translate-y-0 active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-lime-300/70"
+                  className={`group/open ${actionButtonBaseClass} border border-lime-200/35 bg-lime-300 text-[#09120b] shadow-[0_12px_26px_rgba(163,230,53,0.18),inset_0_1px_0_rgba(255,255,255,0.22)] hover:-translate-y-0.5 hover:border-lime-100/55 hover:bg-[#d8ff68] hover:shadow-[0_18px_34px_rgba(163,230,53,0.26),0_0_36px_rgba(163,230,53,0.18),inset_0_1px_0_rgba(255,255,255,0.3)] focus-visible:ring-lime-300/55`}
                 >
                   <span
                     aria-hidden
-                    className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-0 transition duration-500 ease-out group-hover/open:translate-x-full group-hover/open:opacity-100"
+                    className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_left,rgba(255,255,255,0.32),transparent_55%)] opacity-0 transition-opacity duration-300 group-hover/open:opacity-100"
                   />
-                  <span className="relative z-10 flex items-center gap-1.5">
-                    Open
-                    <ArrowUpRight className="h-3 w-3 transition-transform duration-300 group-hover/open:translate-x-0.5 group-hover/open:-translate-y-0.5" />
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute left-[16px] top-1/2 z-10 flex h-4 w-4 -translate-y-1/2 -translate-x-2 scale-75 items-center justify-center text-[#09120b] opacity-0 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover/open:translate-x-0 group-hover/open:scale-100 group-hover/open:opacity-100"
+                  >
+                    <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover/open:translate-x-0.5 group-hover/open:-translate-y-0.5 group-hover/open:scale-110" />
                   </span>
+                  <span className="relative z-10 transition-transform duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover/open:translate-x-3">
+                    Open
+                  </span>
+                  <span
+                    aria-hidden
+                    className="relative z-10 ml-2 h-1.5 w-1.5 rounded-full bg-[#09120b]/80 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover/open:ml-0 group-hover/open:w-0 group-hover/open:scale-0 group-hover/open:opacity-0"
+                  />
                 </Link>
                 <Link
                   href={`/bounty/${bounty.id}/insights`}
                   onClick={(e) => e.stopPropagation()}
-                  className="group/in relative inline-flex min-h-[36px] items-center justify-center overflow-hidden rounded-xl border border-white/[0.12] bg-white/[0.04] px-4 py-2 text-xs font-medium text-stone-200 shadow-sm outline-none transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:-translate-y-0.5 hover:scale-[1.03] hover:border-lime-300/40 hover:bg-lime-300/[0.08] hover:text-white hover:shadow-[0_0_28px_rgba(163,230,53,0.18)] active:translate-y-0 active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-lime-300/40"
+                  className={`group/in ${actionButtonBaseClass} border border-white/10 bg-white/[0.035] text-stone-100 shadow-[0_8px_20px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.05)] hover:-translate-y-0.5 hover:border-lime-300/22 hover:bg-white/[0.055] hover:shadow-[0_14px_30px_rgba(0,0,0,0.16),inset_0_1px_0_rgba(255,255,255,0.08)] focus-visible:ring-lime-300/35`}
                 >
                   <span
                     aria-hidden
-                    className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-lime-300/25 to-transparent opacity-0 transition duration-500 ease-out group-hover/in:translate-x-full group-hover/in:opacity-100"
+                    className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_left,rgba(163,230,53,0.14),transparent_55%)] opacity-0 transition-opacity duration-300 group-hover/in:opacity-100"
                   />
-                  <span className="relative z-10">Insights</span>
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute left-[16px] top-1/2 z-10 flex h-4 w-4 -translate-y-1/2 -translate-x-2 scale-75 items-center justify-center text-lime-300/95 opacity-0 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover/in:translate-x-0 group-hover/in:scale-100 group-hover/in:opacity-100"
+                  >
+                    <BarChart3 className="h-4 w-4 transition-transform duration-300 group-hover/in:-rotate-6 group-hover/in:scale-110" />
+                  </span>
+                  <span className="relative z-10 transition-transform duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover/in:translate-x-3">
+                    Insights
+                  </span>
                 </Link>
               </div>
             </div>
