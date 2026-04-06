@@ -8,6 +8,9 @@ export type SubmissionForScoring = {
   createdAt: Date;
 };
 
+const MAX_CONSENSUS_POINTS = 20;
+const CONSENSUS_DECAY_SCALE = 3;
+
 function toCents(amount: string) {
   return Math.max(0, Math.round(Number(amount || 0) * 100));
 }
@@ -16,12 +19,22 @@ function fromCents(value: number) {
   return (value / 100).toFixed(2);
 }
 
+function computeConsensusBonus(clusterSize: number) {
+  const supportingVoices = Math.max(0, clusterSize - 1);
+  if (supportingVoices === 0) {
+    return 0;
+  }
+
+  const saturation = 1 - Math.exp(-supportingVoices / CONSENSUS_DECAY_SCALE);
+  return Math.min(MAX_CONSENSUS_POINTS, Math.round(MAX_CONSENSUS_POINTS * saturation));
+}
+
 /**
  * Build score breakdown using the 4-pillar AI-driven model:
  *
  * 1. Base Participation  = 10 pts (fixed)
  * 2. AI Quality Score    = qualityRating * 8 (8-40 pts)
- * 3. Semantic Consensus  = (clusterSize / maxClusterSize) * 20 (0-20 pts)
+ * 3. Semantic Consensus  = 20 * (1 - e^(-(clusterSize - 1) / 3)) (0-20 pts)
  * 4. Discovery Bonus     = 12 pts for earliest submission in each cluster
  *
  * Max possible: 82 pts
@@ -41,11 +54,6 @@ export function buildScoreBreakdown(
     }
   }
 
-  // Find the largest cluster for proportional consensus scoring
-  const maxClusterSize = clusters.length > 0
-    ? Math.max(...clusters.map((c) => c.count))
-    : 1;
-
   // Build highlight lookup: submissionId -> bonus points
   const highlightMap = new Map(highlights.map((h) => [h.submissionId, h]));
 
@@ -60,9 +68,9 @@ export function buildScoreBreakdown(
     // Pillar 3: Discovery Bonus (earliest in cluster)
     const discoveryBonus = highlightMap.get(submission.id)?.bonusPoints ?? 0;
 
-    // Pillar 4: Semantic Consensus Bonus (cluster size proportion)
+    // Pillar 4: Semantic Consensus Bonus with diminishing marginal returns
     const clusterSize = clusterSizeBySubmission.get(submission.id) ?? 1;
-    const consensusBonus = Math.round((clusterSize / maxClusterSize) * 20);
+    const consensusBonus = computeConsensusBonus(clusterSize);
 
     const totalPoints = participationPts + qualityPts + discoveryBonus + consensusBonus;
 

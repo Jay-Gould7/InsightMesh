@@ -1,8 +1,8 @@
-import { analyzeSubmissions } from "@/lib/ai/analyzer";
-import { buildScoreBreakdown } from "@/lib/ai/scorer";
 import { apiError } from "@/lib/api";
+import { coreAddressesEqual } from "@/lib/conflux/address";
 import { getBountyDetail, markAnalyzing, saveAnalysis, saveScoreSnapshot } from "@/lib/db/queries";
 import { fakeSnapshotKey } from "@/lib/demo";
+import { runSettlementEngine } from "@/lib/settlement-engine";
 import { creatorActionSchema } from "@/lib/validators";
 
 export async function POST(request: Request) {
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       return apiError("Bounty not found", 404);
     }
 
-    if (payload.callerAddress.toLowerCase() !== bounty.creatorCoreAddress.toLowerCase()) {
+    if (!coreAddressesEqual(payload.callerAddress, bounty.creatorCoreAddress)) {
       return apiError("Only the bounty creator can freeze a score snapshot.", 403);
     }
 
@@ -25,57 +25,54 @@ export async function POST(request: Request) {
 
     await markAnalyzing(bounty.id);
 
-    // Step 1: AI-driven semantic analysis (clustering + quality ratings)
-    const analysis = await analyzeSubmissions(
-      bounty.title,
-      bounty.prompt,
-      bounty.submissions.map((submission: any) => ({
+    const engine = await runSettlementEngine({
+      title: bounty.title,
+      prompt: bounty.prompt,
+      totalUsdtReward: bounty.rewardAmount,
+      submissions: bounty.submissions.map((submission: any) => ({
         id: submission.id,
-        createdAt: submission.createdAt,
-        text: submission.summary ?? JSON.stringify(submission.answers),
-      })),
-    );
-
-    // Step 2: Build score breakdown using AI quality ratings
-    const scoring = buildScoreBreakdown(
-      bounty.submissions.map((submission: any) => ({
-        id: submission.id,
+        walletAddress: submission.payoutAddress,
         submitterCoreAddress: submission.submitterCoreAddress,
-        payoutAddress: submission.payoutAddress,
-        summary: submission.summary ?? JSON.stringify(submission.answers),
-        createdAt: submission.createdAt,
+        content: submission.summary ?? JSON.stringify(submission.answers),
+        submittedAt: submission.createdAt,
       })),
-      analysis.clusters,
-      analysis.highlights,
-      analysis.qualityRatings,
-      bounty.rewardAmount,
-    );
+    });
+
+    if (engine.scoreBreakdown.length === 0 || engine.recipients.length === 0) {
+      return apiError("No eligible submissions remained after anti-Sybil filtering.", 400, {
+        disqualified: engine.disqualified,
+      });
+    }
 
     const snapshotKey = fakeSnapshotKey();
     await saveAnalysis(bounty.id, {
-      clusters: analysis.clusters,
-      duplicates: analysis.duplicates,
-      highlights: analysis.highlights,
-      scoreBreakdown: scoring.entries,
+      clusters: engine.clusters,
+      duplicates: engine.duplicates,
+      highlights: engine.highlights,
+      scoreBreakdown: engine.scoreBreakdown,
       snapshotKey,
     });
     await saveScoreSnapshot({
       bountyId: bounty.id,
       snapshotKey,
       rewardPool: bounty.rewardAmount,
-      totalPoints: scoring.totalPoints,
+      totalPoints: engine.totalPoints,
       createdBy: bounty.creatorEspaceAddress,
-      entries: scoring.entries,
+      entries: engine.scoreBreakdown,
     });
 
     return Response.json({
       snapshotKey,
-      totalPoints: scoring.totalPoints,
-      clusters: analysis.clusters,
-      duplicates: analysis.duplicates,
-      highlights: analysis.highlights,
-      qualityRatings: analysis.qualityRatings,
-      scoreBreakdown: scoring.entries,
+      totalPoints: engine.totalPoints,
+      clusters: engine.clusters,
+      duplicates: engine.duplicates,
+      highlights: engine.highlights,
+      qualityRatings: engine.qualityRatings,
+      scoreBreakdown: engine.scoreBreakdown,
+      recipients: engine.recipients,
+      rewardAmounts: engine.rewardAmounts,
+      eligibleSubmissionIds: engine.eligibleSubmissionIds,
+      disqualified: engine.disqualified,
     });
   } catch (error) {
     return apiError("Unable to create score snapshot", 400, error);

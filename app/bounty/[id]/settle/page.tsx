@@ -6,6 +6,7 @@ import { RewardSummary } from "@/components/reward-summary";
 import { ScoreTable } from "@/components/score-table";
 import { SettlementPanel } from "@/components/settlement-panel";
 import { getBountyDetail } from "@/lib/db/queries";
+import LightRays from "@/components/reactbits/LightRays";
 
 export default async function BountySettlePage({ params }: { params: Promise<{ id: string }> }) {
   const resolved = await params;
@@ -14,7 +15,25 @@ export default async function BountySettlePage({ params }: { params: Promise<{ i
 
   return (
     <CreatorGate creatorCoreAddress={bounty.creatorCoreAddress} bountyId={bounty.id}>
-      <div className="space-y-8">
+      <div className="fixed top-0 left-0 w-full h-[100vh] z-0 pointer-events-none">
+        <LightRays
+          raysOrigin="top-center"
+          raysColor="#3dc389"
+          raysSpeed={1.5}
+          lightSpread={0.5}
+          rayLength={3}
+          followMouse={true}
+          mouseInfluence={0.1}
+          noiseAmount={0.1}
+          distortion={0}
+          className="custom-rays opacity-40"
+          pulsating={false}
+          fadeDistance={2}
+          saturation={1}
+        />
+      </div>
+
+      <div className="relative z-10 space-y-8">
         <section className="rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
           <p className="text-xs uppercase tracking-[0.35em] text-lime-300/70">Settlement control room</p>
           <h1 className="mt-2 text-4xl font-semibold text-white">{bounty.title}</h1>

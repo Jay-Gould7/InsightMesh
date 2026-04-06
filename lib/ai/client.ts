@@ -1,17 +1,35 @@
 import { env, hasGeminiAccess } from "@/lib/env";
 
 function extractJson<T>(text: string): T | null {
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) {
+  const trimmed = text.trim();
+  if (!trimmed) {
     return null;
   }
 
   try {
-    return JSON.parse(text.slice(start, end + 1)) as T;
+    return JSON.parse(trimmed) as T;
   } catch {
-    return null;
+    // Fall back to extracting the first JSON object or array from mixed output.
   }
+
+  const candidates: Array<[number, number]> = [
+    [trimmed.indexOf("{"), trimmed.lastIndexOf("}")],
+    [trimmed.indexOf("["), trimmed.lastIndexOf("]")],
+  ];
+
+  for (const [start, end] of candidates) {
+    if (start === -1 || end === -1 || end <= start) {
+      continue;
+    }
+
+    try {
+      return JSON.parse(trimmed.slice(start, end + 1)) as T;
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
 }
 
 export async function requestGeminiJson<T>(systemInstruction: string, userPrompt: string): Promise<T | null> {

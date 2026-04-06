@@ -1,6 +1,7 @@
-import { analyzeSubmissions } from "@/lib/ai/analyzer";
 import { apiError } from "@/lib/api";
+import { coreAddressesEqual } from "@/lib/conflux/address";
 import { getBountyDetail } from "@/lib/db/queries";
+import { runSettlementEngine } from "@/lib/settlement-engine";
 import { creatorActionSchema } from "@/lib/validators";
 
 export async function POST(request: Request) {
@@ -13,7 +14,7 @@ export async function POST(request: Request) {
       return apiError("Bounty not found", 404);
     }
 
-    if (payload.callerAddress.toLowerCase() !== bounty.creatorCoreAddress.toLowerCase()) {
+    if (!coreAddressesEqual(payload.callerAddress, bounty.creatorCoreAddress)) {
       return apiError("Only the bounty creator can trigger analysis.", 403);
     }
 
@@ -21,15 +22,18 @@ export async function POST(request: Request) {
       return apiError("At least one submission is required before analysis.", 400);
     }
 
-    const result = await analyzeSubmissions(
-      bounty.title,
-      bounty.prompt,
-      bounty.submissions.map((submission: any) => ({
+    const result = await runSettlementEngine({
+      title: bounty.title,
+      prompt: bounty.prompt,
+      totalUsdtReward: bounty.rewardAmount,
+      submissions: bounty.submissions.map((submission: any) => ({
         id: submission.id,
-        createdAt: submission.createdAt,
-        text: submission.summary ?? JSON.stringify(submission.answers),
+        walletAddress: submission.payoutAddress,
+        submitterCoreAddress: submission.submitterCoreAddress,
+        content: submission.summary ?? JSON.stringify(submission.answers),
+        submittedAt: submission.createdAt,
       })),
-    );
+    });
 
     return Response.json(result);
   } catch (error) {
