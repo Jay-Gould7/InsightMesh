@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { startTransition, useState } from "react";
 
 import { useFluentWallet } from "@/components/providers/fluent-provider";
-import { INSIGHTS_ANALYSIS_EVENT } from "@/lib/insights-wave";
+import { INSIGHTS_ANALYSIS_EVENT, MIN_INSIGHTS_ANALYSIS_WAVE_MS } from "@/lib/insights-wave";
 
 export function InsightActions({ bountyId }: { bountyId: number }) {
   const router = useRouter();
@@ -31,6 +31,7 @@ export function InsightActions({ bountyId }: { bountyId: number }) {
     setError("");
     setIsAnalyzing(true);
     emitAnalysisState(true);
+    const startedAt = Date.now();
 
     try {
       const response = await fetch("/api/ai/analyze", {
@@ -49,6 +50,13 @@ export function InsightActions({ bountyId }: { bountyId: number }) {
     } catch (analyzeError) {
       setError(analyzeError instanceof Error ? analyzeError.message : "Unable to analyze feedback.");
     } finally {
+      const elapsed = Date.now() - startedAt;
+      const remaining = Math.max(0, MIN_INSIGHTS_ANALYSIS_WAVE_MS - elapsed);
+
+      if (remaining > 0) {
+        await new Promise((resolve) => setTimeout(resolve, remaining));
+      }
+
       setIsAnalyzing(false);
       emitAnalysisState(false);
     }

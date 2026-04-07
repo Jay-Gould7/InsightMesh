@@ -1,14 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { INSIGHTS_ANALYSIS_EVENT } from "@/lib/insights-wave";
 
 const VIEWBOX_WIDTH = 1440;
 const VIEWBOX_HEIGHT = 320;
-const WAVE_SEGMENT = 180;
-const WAVE_LENGTH = 520;
+const WAVE_SAMPLE_STEP = 24;
+const WAVE_LENGTH = 760;
+const TWO_PI = Math.PI * 2;
 
 type WaveLayer = {
   key: string;
@@ -23,14 +24,19 @@ type WaveLayer = {
   gradientStops: Array<{ offset: string; color: string }>;
 };
 
+type WavePoint = {
+  x: number;
+  y: number;
+};
+
 const waveLayers: WaveLayer[] = [
   {
     key: "primary",
     baseline: 122,
     phaseOffset: 0,
-    duration: 4.8,
+    duration: 6.2,
     strokeWidth: 3.4,
-    restAmplitude: 12,
+    restAmplitude: 14,
     activeAmplitude: 112,
     restOpacity: 0.74,
     activeOpacity: 1,
@@ -46,9 +52,9 @@ const waveLayers: WaveLayer[] = [
     key: "secondary",
     baseline: 142,
     phaseOffset: Math.PI / 2.8,
-    duration: 3.9,
+    duration: 5.1,
     strokeWidth: 2.5,
-    restAmplitude: 8,
+    restAmplitude: 9,
     activeAmplitude: 84,
     restOpacity: 0.34,
     activeOpacity: 0.82,
@@ -64,9 +70,9 @@ const waveLayers: WaveLayer[] = [
     key: "glow",
     baseline: 158,
     phaseOffset: Math.PI / 1.6,
-    duration: 3.1,
+    duration: 4.2,
     strokeWidth: 1.7,
-    restAmplitude: 5,
+    restAmplitude: 6,
     activeAmplitude: 62,
     restOpacity: 0.16,
     activeOpacity: 0.54,
@@ -80,33 +86,65 @@ const waveLayers: WaveLayer[] = [
   },
 ];
 
-function buildWavePath(baseline: number, amplitude: number, phase: number) {
-  const sampleY = (x: number) =>
-    baseline + Math.sin((x / WAVE_LENGTH) * Math.PI * 2 + phase) * amplitude;
+function buildWavePath(
+  baseline: number,
+  amplitude: number,
+  phase: number,
+  timePhase: number,
+  detailPhase: number,
+) {
+  const sampleY = (x: number) => {
+    const primaryShape = Math.sin((x / WAVE_LENGTH) * TWO_PI + phase);
+    const secondaryShape = Math.sin((x / (WAVE_LENGTH * 0.58)) * TWO_PI + phase * 0.64);
+    const tertiaryShape = Math.sin((x / (WAVE_LENGTH * 1.52)) * TWO_PI - phase * 0.34);
 
-  let path = `M 0 ${sampleY(0)}`;
+    const primaryMotion = Math.sin(timePhase);
+    const secondaryMotion = Math.sin(timePhase * 1.38 + phase * 0.72);
+    const tertiaryMotion = Math.sin(detailPhase * 0.84 - phase * 0.56);
 
-  for (let x = 0; x < VIEWBOX_WIDTH; x += WAVE_SEGMENT) {
-    const cp1X = x + WAVE_SEGMENT / 3;
-    const cp2X = x + (WAVE_SEGMENT * 2) / 3;
-    const endX = x + WAVE_SEGMENT;
-    path += ` C ${cp1X} ${sampleY(cp1X)} ${cp2X} ${sampleY(cp2X)} ${endX} ${sampleY(endX)}`;
+    const standingWave =
+      primaryShape * primaryMotion +
+      secondaryShape * 0.32 * secondaryMotion +
+      tertiaryShape * 0.18 * tertiaryMotion;
+
+    return baseline + standingWave * amplitude;
+  };
+
+  const points: WavePoint[] = [];
+  for (let x = -WAVE_SAMPLE_STEP; x <= VIEWBOX_WIDTH + WAVE_SAMPLE_STEP; x += WAVE_SAMPLE_STEP) {
+    points.push({ x, y: sampleY(x) });
+  }
+
+  let path = `M ${points[1]?.x ?? 0} ${points[1]?.y ?? sampleY(0)}`;
+
+  for (let index = 1; index < points.length - 2; index += 1) {
+    const previous = points[index - 1];
+    const current = points[index];
+    const next = points[index + 1];
+    const afterNext = points[index + 2];
+
+    const cp1X = current.x + (next.x - previous.x) / 6;
+    const cp1Y = current.y + (next.y - previous.y) / 6;
+    const cp2X = next.x - (afterNext.x - current.x) / 6;
+    const cp2Y = next.y - (afterNext.y - current.y) / 6;
+
+    path += ` C ${cp1X} ${cp1Y} ${cp2X} ${cp2Y} ${next.x} ${next.y}`;
   }
 
   return path;
 }
 
-function buildWaveFrames(baseline: number, amplitude: number, phaseOffset: number) {
-  const frameCount = 10;
-  return Array.from({ length: frameCount + 1 }, (_, index) => {
-    const phase = phaseOffset + (index / frameCount) * Math.PI * 2;
-    return buildWavePath(baseline, amplitude, phase);
-  });
-}
-
 export function InsightsWaveOverlay() {
   const uniqueId = useId().replace(/:/g, "-");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const pathRefs = useRef<Array<SVGPathElement | null>>([]);
+  const opacityRefs = useRef<number[]>(waveLayers.map((layer) => layer.restOpacity));
+  const amplitudeRefs = useRef<number[]>(waveLayers.map((layer) => layer.restAmplitude));
+  const analyzingTargetRef = useRef(false);
+
+  useEffect(() => {
+    analyzingTargetRef.current = isAnalyzing;
+  }, [isAnalyzing]);
 
   useEffect(() => {
     const handleAnalysisState = (event: Event) => {
@@ -126,31 +164,66 @@ export function InsightsWaveOverlay() {
       waveLayers.map((layer) => ({
         ...layer,
         gradientId: `${layer.key}-insights-wave-${uniqueId}`,
-        waveFrames: buildWaveFrames(
-          layer.baseline,
-          isAnalyzing ? layer.activeAmplitude : layer.restAmplitude,
-          layer.phaseOffset,
-        ),
       })),
-    [isAnalyzing, uniqueId],
+    [uniqueId],
   );
 
-  const keyframeTimes = animatedLayers[0]?.waveFrames.map((_, index, array) => index / (array.length - 1)) ?? [0, 1];
-  const keyTimesString = keyframeTimes.join(";");
-  const keySplinesString = keyframeTimes.length > 1
-    ? Array.from({ length: keyframeTimes.length - 1 }, () => "0.42 0 0.58 1").join(";")
-    : undefined;
+  useEffect(() => {
+    let frameId = 0;
+    let previousTime = 0;
+
+    const tick = (time: number) => {
+      if (!previousTime) {
+        previousTime = time;
+      }
+
+      const delta = Math.min(40, time - previousTime);
+      previousTime = time;
+      animatedLayers.forEach((layer, index) => {
+        const targetAmplitude = analyzingTargetRef.current ? layer.activeAmplitude : layer.restAmplitude;
+        const targetOpacity = analyzingTargetRef.current ? layer.activeOpacity : layer.restOpacity;
+        const smoothing = analyzingTargetRef.current
+          ? 1 - Math.exp(-delta / 70)
+          : 1 - Math.exp(-delta / 180);
+
+        amplitudeRefs.current[index] += (targetAmplitude - amplitudeRefs.current[index]) * smoothing;
+        opacityRefs.current[index] += (targetOpacity - opacityRefs.current[index]) * smoothing;
+
+        const pulse = Math.sin((time / 1000 / layer.duration) * TWO_PI + layer.phaseOffset);
+        const breathing = 0.72 + ((pulse + 1) / 2) * 0.56;
+        const motionPhase = (time / 1000 / layer.duration) * TWO_PI + layer.phaseOffset;
+        const detailPhase = (time / 1000 / (layer.duration * 0.76)) * TWO_PI;
+        const verticalOffset = Math.sin((time / 1000 / (layer.duration * 1.28)) * TWO_PI + layer.phaseOffset) *
+          (analyzingTargetRef.current ? 26 : 8);
+        const liveAmplitude = amplitudeRefs.current[index] * breathing;
+        const path = pathRefs.current[index];
+        if (path) {
+          path.setAttribute(
+            "d",
+            buildWavePath(layer.baseline + verticalOffset, liveAmplitude, layer.phaseOffset, motionPhase, detailPhase),
+          );
+          path.setAttribute("opacity", `${opacityRefs.current[index]}`);
+        }
+      });
+
+      frameId = window.requestAnimationFrame(tick);
+    };
+
+    frameId = window.requestAnimationFrame(tick);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [animatedLayers]);
 
   return (
     <motion.div
       initial={false}
       animate={{
-        top: isAnalyzing ? -148 : -28,
-        height: isAnalyzing ? 320 : 118,
         opacity: isAnalyzing ? 1 : 0.92,
       }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className="pointer-events-none absolute inset-x-[-6%] z-50 overflow-visible"
+      className="pointer-events-none absolute inset-x-[-6%] top-[-112px] z-50 h-[320px] overflow-visible"
       style={{
         filter: isAnalyzing
           ? "drop-shadow(0 0 36px rgba(94,234,212,0.24))"
@@ -158,7 +231,7 @@ export function InsightsWaveOverlay() {
       }}
       aria-hidden
     >
-      {animatedLayers.map((layer) => (
+      {animatedLayers.map((layer, index) => (
         <svg
           key={layer.key}
           viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
@@ -174,24 +247,18 @@ export function InsightsWaveOverlay() {
           </defs>
 
           <path
-            d={layer.waveFrames[0]}
+            ref={(node) => {
+              pathRefs.current[index] = node;
+            }}
+            d={buildWavePath(layer.baseline, layer.restAmplitude, layer.phaseOffset, 0, 0)}
             fill="none"
             stroke={`url(#${layer.gradientId})`}
             strokeWidth={layer.strokeWidth}
             strokeLinecap="round"
-            opacity={isAnalyzing ? layer.activeOpacity : layer.restOpacity}
+            strokeLinejoin="round"
+            opacity={layer.restOpacity}
             style={{ mixBlendMode: "screen" }}
-          >
-            <animate
-              attributeName="d"
-              dur={`${layer.duration}s`}
-              repeatCount="indefinite"
-              calcMode="spline"
-              keyTimes={keyTimesString}
-              keySplines={keySplinesString}
-              values={layer.waveFrames.join(";")}
-            />
-          </path>
+          />
         </svg>
       ))}
     </motion.div>
