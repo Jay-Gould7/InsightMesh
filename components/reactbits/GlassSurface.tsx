@@ -44,10 +44,8 @@ export interface GlassSurfaceProps {
 }
 
 const useDarkMode = () => {
-  const [isDark, setIsDark] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return true;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
+  // Keep the first server/client render identical, then sync with the real media query after mount.
+  const [isDark, setIsDark] = useState<boolean>(true);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -295,9 +293,9 @@ const GlassSurface: React.FC<GlassSurfaceProps> = ({
   const glassSurfaceClasses =
     'relative flex items-center justify-center overflow-hidden transition-opacity duration-[260ms] ease-out';
 
-  const focusVisibleClasses = isDarkMode
-    ? 'focus-visible:outline-2 focus-visible:outline-[#0A84FF] focus-visible:outline-offset-2'
-    : 'focus-visible:outline-2 focus-visible:outline-[#007AFF] focus-visible:outline-offset-2';
+  const focusVisibleClasses = mounted && !isDarkMode
+    ? 'focus-visible:outline-2 focus-visible:outline-[#007AFF] focus-visible:outline-offset-2'
+    : 'focus-visible:outline-2 focus-visible:outline-[#0A84FF] focus-visible:outline-offset-2';
 
   return (
     <div

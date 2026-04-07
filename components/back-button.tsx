@@ -1,6 +1,8 @@
 "use client";
 
+import type { ComponentProps } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
 
@@ -14,7 +16,14 @@ import { ChevronLeft } from "lucide-react";
  * - Content: Text slides right, Arrow pops from left (z-10).
  * - Dot: Fades/scales to zero on hover.
  */
-export function BackButton() {
+type BackButtonProps = {
+  href?: string | ComponentProps<typeof Link>["href"];
+  mode?: "link" | "history";
+};
+
+export function BackButton({ href = "/dashboard", mode = "link" }: BackButtonProps) {
+  const router = useRouter();
+
   // Common jelly transition
   const jellyTransition = {
     type: "spring" as const,
@@ -64,43 +73,68 @@ export function BackButton() {
     },
   } as const;
 
-  return (
-    <Link href="/dashboard" className="no-underline block focus:outline-none">
+  const content = (
+    <motion.div
+      initial="initial"
+      whileHover="hover"
+      animate="initial"
+      className="relative flex h-[36px] w-[116px] flex-none items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white/5 text-[16px] font-semibold uppercase tracking-[0.2px] isolate cursor-pointer"
+    >
+      {/* Layer 0: Background Expansion (Origins from dot position) */}
       <motion.div
-        initial="initial"
-        whileHover="hover"
-        animate="initial"
-        className="relative flex h-[36px] w-[116px] flex-none items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white/5 text-[16px] font-semibold uppercase tracking-[0.2px] isolate cursor-pointer"
-      >
-        {/* Layer 0: Background Expansion (Origins from dot position) */}
+        variants={variants.bgFill}
+        className="absolute right-[31px] top-1/2 z-0 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-[#a3e635]"
+        style={{ transformOrigin: "center" }}
+      />
+
+      {/* Layer 1: Foreground Content */}
+      <div className="relative z-10 flex w-full items-center justify-center pointer-events-none px-[18px]">
+        
+        {/* Arrow Chevron */}
+        <motion.div variants={variants.arrow} className="flex items-center justify-center origin-right text-black">
+          <ChevronLeft className="h-5 w-5 stroke-[3px]" />
+        </motion.div>
+
+        {/* Label Text */}
+        <motion.span variants={variants.text} className="flex-shrink-0">
+          Back
+        </motion.span>
+
+        {/* Indicator Dot Container */}
         <motion.div
-          variants={variants.bgFill}
-          className="absolute right-[31px] top-1/2 z-0 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-[#a3e635]"
-          style={{ transformOrigin: "center" }}
-        />
+          variants={variants.dot}
+          className="flex items-center justify-center"
+        >
+          <div className="h-1.5 w-1.5 rounded-full bg-[#a3e635] shadow-[0_0_8px_rgba(163,230,53,0.4)]" />
+        </motion.div>
+      </div>
+    </motion.div>
+  );
 
-        {/* Layer 1: Foreground Content */}
-        <div className="relative z-10 flex w-full items-center justify-center pointer-events-none px-[18px]">
-          
-          {/* Arrow Chevron */}
-          <motion.div variants={variants.arrow} className="flex items-center justify-center origin-right text-black">
-            <ChevronLeft className="h-5 w-5 stroke-[3px]" />
-          </motion.div>
+  if (mode === "history") {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          if (typeof window !== "undefined" && window.history.length > 1) {
+            router.back();
+            return;
+          }
 
-          {/* Label Text */}
-          <motion.span variants={variants.text} className="flex-shrink-0">
-            Back
-          </motion.span>
+          if (typeof window !== "undefined") {
+            window.location.assign(String(href));
+          }
+        }}
+        className="block focus:outline-none"
+      >
+        {content}
+      </button>
+    );
+  }
 
-          {/* Indicator Dot Container */}
-          <motion.div
-            variants={variants.dot}
-            className="flex items-center justify-center"
-          >
-            <div className="h-1.5 w-1.5 rounded-full bg-[#a3e635] shadow-[0_0_8px_rgba(163,230,53,0.4)]" />
-          </motion.div>
-        </div>
-      </motion.div>
+  return (
+    <Link href={href as ComponentProps<typeof Link>["href"]} className="no-underline block focus:outline-none">
+      {content}
     </Link>
   );
 }

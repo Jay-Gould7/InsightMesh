@@ -50,6 +50,7 @@ export async function POST(request: Request) {
       duplicates: engine.duplicates,
       highlights: engine.highlights,
       scoreBreakdown: engine.scoreBreakdown,
+      disqualified: engine.disqualified,
       snapshotKey,
     });
     await saveScoreSnapshot({

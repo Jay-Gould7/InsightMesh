@@ -1,7 +1,7 @@
 import { AnalysisStatus, BountyStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
-import type { AnalysisCluster, InsightHighlight, ScoreBreakdownEntry, SurveyQuestion } from "@/lib/types";
+import type { AnalysisCluster, InsightHighlight, ScoreBreakdownEntry, SurveyQuestion, DisqualifiedSubmission } from "@/lib/types";
 
 function parseJson<T>(value: string | null | undefined, fallback: T): T {
   if (!value) return fallback;
@@ -20,37 +20,38 @@ function hydrateBounty(bounty: any): any {
     questions: typeof bounty.questions === "string" ? parseJson<SurveyQuestion[]>(bounty.questions, []) : bounty.questions,
     submissions: Array.isArray(bounty.submissions)
       ? bounty.submissions.map((submission: any) => ({
-          ...submission,
-          answers: typeof submission.answers === "string" ? parseJson<Record<string, unknown>>(submission.answers, {}) : submission.answers,
-        }))
+        ...submission,
+        answers: typeof submission.answers === "string" ? parseJson<Record<string, unknown>>(submission.answers, {}) : submission.answers,
+      }))
       : bounty.submissions,
     analysis: bounty.analysis
       ? {
-          ...bounty.analysis,
-          clusters: typeof bounty.analysis.clusters === "string" ? parseJson<AnalysisCluster[]>(bounty.analysis.clusters, []) : bounty.analysis.clusters,
-          duplicates: typeof bounty.analysis.duplicates === "string" ? parseJson<number[][]>(bounty.analysis.duplicates, []) : bounty.analysis.duplicates,
-          highlights: typeof bounty.analysis.highlights === "string" ? parseJson<InsightHighlight[]>(bounty.analysis.highlights, []) : bounty.analysis.highlights,
-          scoreBreakdown: typeof bounty.analysis.scoreBreakdown === "string" ? parseJson<ScoreBreakdownEntry[]>(bounty.analysis.scoreBreakdown, []) : bounty.analysis.scoreBreakdown,
-        }
+        ...bounty.analysis,
+        clusters: typeof bounty.analysis.clusters === "string" ? parseJson<AnalysisCluster[]>(bounty.analysis.clusters, []) : bounty.analysis.clusters,
+        duplicates: typeof bounty.analysis.duplicates === "string" ? parseJson<number[][]>(bounty.analysis.duplicates, []) : bounty.analysis.duplicates,
+        highlights: typeof bounty.analysis.highlights === "string" ? parseJson<InsightHighlight[]>(bounty.analysis.highlights, []) : bounty.analysis.highlights,
+        scoreBreakdown: typeof bounty.analysis.scoreBreakdown === "string" ? parseJson<ScoreBreakdownEntry[]>(bounty.analysis.scoreBreakdown, []) : bounty.analysis.scoreBreakdown,
+        disqualified: typeof bounty.analysis.disqualified === "string" ? parseJson<DisqualifiedSubmission[]>(bounty.analysis.disqualified, []) : bounty.analysis.disqualified,
+      }
       : bounty.analysis,
     scoreSnapshot: bounty.scoreSnapshot
       ? {
-          ...bounty.scoreSnapshot,
-          entries: Array.isArray(bounty.scoreSnapshot.entries)
-            ? bounty.scoreSnapshot.entries.map((entry: any) => ({
-                ...entry,
-                submission: entry.submission
-                  ? {
-                      ...entry.submission,
-                      answers:
-                        typeof entry.submission.answers === "string"
-                          ? parseJson<Record<string, unknown>>(entry.submission.answers, {})
-                          : entry.submission.answers,
-                    }
-                  : entry.submission,
-              }))
-            : bounty.scoreSnapshot.entries,
-        }
+        ...bounty.scoreSnapshot,
+        entries: Array.isArray(bounty.scoreSnapshot.entries)
+          ? bounty.scoreSnapshot.entries.map((entry: any) => ({
+            ...entry,
+            submission: entry.submission
+              ? {
+                ...entry.submission,
+                answers:
+                  typeof entry.submission.answers === "string"
+                    ? parseJson<Record<string, unknown>>(entry.submission.answers, {})
+                    : entry.submission.answers,
+              }
+              : entry.submission,
+          }))
+          : bounty.scoreSnapshot.entries,
+      }
       : bounty.scoreSnapshot,
   };
 }
@@ -63,8 +64,8 @@ export async function listVisibleBounties(options?: { search?: string; status?: 
     status: status
       ? { equals: status }
       : {
-          in: [BountyStatus.ACTIVE, BountyStatus.ANALYZING, BountyStatus.READY_TO_SETTLE, BountyStatus.SETTLED],
-        },
+        in: [BountyStatus.ACTIVE, BountyStatus.ANALYZING, BountyStatus.READY_TO_SETTLE, BountyStatus.SETTLED],
+      },
   };
 
   if (search) {
@@ -221,7 +222,7 @@ export async function markAnalyzing(id: number) {
 
 export async function saveAnalysis(
   bountyId: number,
-  payload: { clusters: AnalysisCluster[]; duplicates: number[][]; highlights: InsightHighlight[]; scoreBreakdown: ScoreBreakdownEntry[]; snapshotKey?: string },
+  payload: { clusters: AnalysisCluster[]; duplicates: number[][]; highlights: InsightHighlight[]; scoreBreakdown: ScoreBreakdownEntry[]; disqualified?: DisqualifiedSubmission[]; snapshotKey?: string },
 ) {
   await prisma.analysis.upsert({
     where: { bountyId },
@@ -231,6 +232,7 @@ export async function saveAnalysis(
       duplicates: JSON.stringify(payload.duplicates),
       highlights: JSON.stringify(payload.highlights),
       scoreBreakdown: JSON.stringify(payload.scoreBreakdown),
+      disqualified: JSON.stringify(payload.disqualified ?? []),
       aiModel: "gemini-2.5-flash",
       snapshotKey: payload.snapshotKey,
     },
@@ -239,6 +241,7 @@ export async function saveAnalysis(
       duplicates: JSON.stringify(payload.duplicates),
       highlights: JSON.stringify(payload.highlights),
       scoreBreakdown: JSON.stringify(payload.scoreBreakdown),
+      disqualified: JSON.stringify(payload.disqualified ?? []),
       aiModel: "gemini-2.5-flash",
       snapshotKey: payload.snapshotKey,
     },

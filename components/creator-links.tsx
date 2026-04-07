@@ -36,23 +36,7 @@ export function CreatorLinks({ bountyId, creatorCoreAddress }: CreatorLinksProps
           aria-hidden
           className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_left,rgba(163,230,53,0.14),transparent_55%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         />
-        <span className="relative z-10 transition-transform duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover:translate-x-3">Insights</span>
-      </Link>
-      <Link
-        href={`/bounty/${bountyId}/settle`}
-        className={creatorLinkClass}
-      >
-        <span
-          aria-hidden
-          className="pointer-events-none absolute left-[16px] top-1/2 z-10 flex h-4 w-4 -translate-y-1/2 -translate-x-2 scale-75 items-center justify-center text-lime-300/95 opacity-0 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover:translate-x-0 group-hover:scale-100 group-hover:opacity-100"
-        >
-          <Coins className="h-4 w-4 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110" />
-        </span>
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_left,rgba(163,230,53,0.14),transparent_55%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        />
-        <span className="relative z-10 transition-transform duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover:translate-x-3">Settlement</span>
+        <span className="relative z-10 transition-transform duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover:translate-x-3">Manage</span>
       </Link>
     </div>
   );

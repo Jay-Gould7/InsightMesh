@@ -41,12 +41,19 @@ export type ScoreBreakdownEntry = {
   summary: string;
 };
 
+export type DisqualifiedSubmission = {
+  submissionId: number;
+  walletAddress: string;
+  reason: "duplicate_wallet_address" | "bot_farm" | "new_wallet_nonce_zero" | "invalid_wallet_address";
+};
+
 export type AnalysisPayload = {
   clusters: AnalysisCluster[];
   duplicates: number[][];
   highlights: InsightHighlight[];
   scoreBreakdown: ScoreBreakdownEntry[];
   qualityRatings: Record<number, number>;
+  disqualified?: DisqualifiedSubmission[];
 };
 
 export type CreateBountyInput = {
