@@ -38,6 +38,11 @@ export const creatorActionSchema = z.object({
   callerAddress: z.string().min(8),
 });
 
+export const bountyReviewActionSchema = z.object({
+  callerAddress: z.string().min(8),
+  action: z.enum(["lock", "unlock"]),
+});
+
 export const activateBountySchema = z.object({
   depositTxHash: z.string().min(8),
   coreCreateTxHash: z.string().min(8),

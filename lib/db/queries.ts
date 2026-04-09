@@ -220,6 +220,83 @@ export async function markAnalyzing(id: number) {
   });
 }
 
+export async function restoreActiveBountyAfterAnalysisFailure(id: number) {
+  return prisma.bounty.update({
+    where: { id },
+    data: {
+      status: BountyStatus.ACTIVE,
+      analysisStatus: AnalysisStatus.FAILED,
+    },
+  });
+}
+
+export async function lockBountyForReview(id: number) {
+  return prisma.bounty.update({
+    where: { id },
+    data: {
+      status: BountyStatus.ANALYZING,
+      analysisStatus: AnalysisStatus.PENDING,
+    },
+  });
+}
+
+export async function unlockBountyForReview(id: number) {
+  return prisma.$transaction(async (tx) => {
+    await tx.analysis.deleteMany({
+      where: { bountyId: id },
+    });
+
+    return tx.bounty.update({
+      where: { id },
+      data: {
+        status: BountyStatus.ACTIVE,
+        analysisStatus: AnalysisStatus.IDLE,
+      },
+    });
+  });
+}
+
+export async function saveAnalysisPreview(
+  bountyId: number,
+  payload: {
+    clusters: AnalysisCluster[];
+    duplicates: number[][];
+    highlights: InsightHighlight[];
+    scoreBreakdown: ScoreBreakdownEntry[];
+    disqualified?: DisqualifiedSubmission[];
+  },
+) {
+  await prisma.analysis.upsert({
+    where: { bountyId },
+    create: {
+      bountyId,
+      clusters: JSON.stringify(payload.clusters),
+      duplicates: JSON.stringify(payload.duplicates),
+      highlights: JSON.stringify(payload.highlights),
+      scoreBreakdown: JSON.stringify(payload.scoreBreakdown),
+      disqualified: JSON.stringify(payload.disqualified ?? []),
+      aiModel: "gemini-2.5-flash",
+      snapshotKey: null,
+    },
+    update: {
+      clusters: JSON.stringify(payload.clusters),
+      duplicates: JSON.stringify(payload.duplicates),
+      highlights: JSON.stringify(payload.highlights),
+      scoreBreakdown: JSON.stringify(payload.scoreBreakdown),
+      disqualified: JSON.stringify(payload.disqualified ?? []),
+      aiModel: "gemini-2.5-flash",
+      snapshotKey: null,
+    },
+  });
+
+  await prisma.bounty.update({
+    where: { id: bountyId },
+    data: {
+      analysisStatus: AnalysisStatus.COMPLETED,
+    },
+  });
+}
+
 export async function saveAnalysis(
   bountyId: number,
   payload: { clusters: AnalysisCluster[]; duplicates: number[][]; highlights: InsightHighlight[]; scoreBreakdown: ScoreBreakdownEntry[]; disqualified?: DisqualifiedSubmission[]; snapshotKey?: string },
@@ -247,9 +324,17 @@ export async function saveAnalysis(
     },
   });
 
+  const bounty = await prisma.bounty.findUnique({
+    where: { id: bountyId },
+    select: { status: true },
+  });
+
   await prisma.bounty.update({
     where: { id: bountyId },
-    data: { analysisStatus: AnalysisStatus.COMPLETED, status: BountyStatus.READY_TO_SETTLE },
+    data: {
+      analysisStatus: AnalysisStatus.COMPLETED,
+      status: bounty?.status === BountyStatus.SETTLED ? BountyStatus.SETTLED : BountyStatus.READY_TO_SETTLE,
+    },
   });
 }
 

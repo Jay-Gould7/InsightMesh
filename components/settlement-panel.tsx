@@ -7,7 +7,19 @@ import { useESpaceWallet } from "@/components/providers/espace-provider";
 import { buildSettlementMessage } from "@/lib/settlement";
 import { truncateAddress } from "@/lib/utils";
 
-export function SettlementPanel({ bountyId, snapshotKey, creatorAddress, settled }: { bountyId: number; snapshotKey: string; creatorAddress: string; settled: boolean }) {
+export function SettlementPanel({
+  bountyId,
+  snapshotKey,
+  creatorAddress,
+  settled,
+  panelId,
+}: {
+  bountyId: number;
+  snapshotKey: string;
+  creatorAddress: string;
+  settled: boolean;
+  panelId?: string;
+}) {
   const router = useRouter();
   const { address } = useESpaceWallet();
   const [error, setError] = useState("");
@@ -18,7 +30,7 @@ export function SettlementPanel({ bountyId, snapshotKey, creatorAddress, settled
     setIsSubmitting(true);
     let creatorSignature = `demo:${creatorAddress.toLowerCase()}`;
     const provider = (window as Window & { ethereum?: { request?: (args: { method: string; params?: string[] }) => Promise<string> } }).ethereum;
-    if (provider?.request && address.toLowerCase() === creatorAddress.toLowerCase()) {
+    if (provider?.request && address && address.toLowerCase() === creatorAddress.toLowerCase()) {
       creatorSignature = await provider.request({ method: "personal_sign", params: [buildSettlementMessage(bountyId, snapshotKey), address] });
     }
     const response = await fetch("/api/settle", {
@@ -33,7 +45,7 @@ export function SettlementPanel({ bountyId, snapshotKey, creatorAddress, settled
   }
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+    <div id={panelId} className="scroll-mt-28 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
       <p className="text-xs uppercase tracking-[0.35em] text-lime-300/70">Creator confirmation</p>
       <h3 className="mt-2 text-xl font-semibold text-white">Sign or demo-confirm the payout</h3>
       <p className="mt-3 text-sm leading-7 text-stone-300">The relayer only distributes funds after the bounty creator approves the frozen snapshot.</p>

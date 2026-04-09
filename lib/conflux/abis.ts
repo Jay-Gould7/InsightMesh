@@ -12,6 +12,16 @@ export const bountyRegistryAbi = [
     outputs: [{ name: "bountyId", type: "uint256" }],
   },
   {
+    type: "function",
+    name: "updateStatus",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "bountyId", type: "uint256" },
+      { name: "status", type: "uint8" },
+    ],
+    outputs: [],
+  },
+  {
     type: "event",
     name: "BountyCreated",
     anonymous: false,
@@ -20,6 +30,15 @@ export const bountyRegistryAbi = [
       { name: "creator", type: "address", indexed: true },
       { name: "rewardAmount", type: "uint256", indexed: false },
       { name: "deadline", type: "uint256", indexed: false },
+    ],
+  },
+  {
+    type: "event",
+    name: "BountyStatusChanged",
+    anonymous: false,
+    inputs: [
+      { name: "bountyId", type: "uint256", indexed: true },
+      { name: "status", type: "uint8", indexed: false },
     ],
   },
 ] as const;

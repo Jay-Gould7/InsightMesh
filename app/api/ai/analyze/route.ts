@@ -1,6 +1,6 @@
 import { apiError } from "@/lib/api";
 import { coreAddressesEqual } from "@/lib/conflux/address";
-import { getBountyDetail } from "@/lib/db/queries";
+import { getBountyDetail, saveAnalysisPreview } from "@/lib/db/queries";
 import { runSettlementEngine } from "@/lib/settlement-engine";
 import { creatorActionSchema } from "@/lib/validators";
 
@@ -16,6 +16,18 @@ export async function POST(request: Request) {
 
     if (!coreAddressesEqual(payload.callerAddress, bounty.creatorCoreAddress)) {
       return apiError("Only the bounty creator can trigger analysis.", 403);
+    }
+
+    if (bounty.status === "SETTLED") {
+      return apiError("Bounty is already settled.", 409);
+    }
+
+    if (bounty.status === "READY_TO_SETTLE") {
+      return apiError("Score snapshot is already frozen.", 409);
+    }
+
+    if (bounty.status !== "ANALYZING") {
+      return apiError("Lock submissions before running AI analysis.", 409);
     }
 
     if (bounty.submissions.length === 0) {
@@ -35,8 +47,16 @@ export async function POST(request: Request) {
       })),
     });
 
+    await saveAnalysisPreview(bounty.id, {
+      clusters: result.clusters,
+      duplicates: result.duplicates,
+      highlights: result.highlights,
+      scoreBreakdown: result.scoreBreakdown,
+      disqualified: result.disqualified,
+    });
+
     return Response.json(result);
   } catch (error) {
-    return apiError("Unable to analyze submissions", 400, error);
+    return apiError(error instanceof Error ? error.message : "AI analysis failed. Please retry.", 400, error);
   }
 }

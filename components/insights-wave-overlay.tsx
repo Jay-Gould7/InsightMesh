@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
-import { INSIGHTS_ANALYSIS_EVENT } from "@/lib/insights-wave";
+import { INSIGHTS_ANALYSIS_EVENT, type InsightsWaveMode } from "@/lib/insights-wave";
 
 const VIEWBOX_WIDTH = 1440;
 const VIEWBOX_HEIGHT = 320;
@@ -136,20 +136,32 @@ function buildWavePath(
 
 export function InsightsWaveOverlay() {
   const uniqueId = useId().replace(/:/g, "-");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [waveMode, setWaveMode] = useState<InsightsWaveMode>("idle");
   const pathRefs = useRef<Array<SVGPathElement | null>>([]);
   const opacityRefs = useRef<number[]>(waveLayers.map((layer) => layer.restOpacity));
   const amplitudeRefs = useRef<number[]>(waveLayers.map((layer) => layer.restAmplitude));
-  const analyzingTargetRef = useRef(false);
+  const speedRefs = useRef<number[]>(waveLayers.map(() => 1));
+  const pulsePhaseRefs = useRef<number[]>(waveLayers.map(() => 0));
+  const motionPhaseRefs = useRef<number[]>(waveLayers.map(() => 0));
+  const detailPhaseRefs = useRef<number[]>(waveLayers.map(() => 0));
+  const offsetPhaseRefs = useRef<number[]>(waveLayers.map(() => 0));
+  const waveModeRef = useRef<InsightsWaveMode>("idle");
 
   useEffect(() => {
-    analyzingTargetRef.current = isAnalyzing;
-  }, [isAnalyzing]);
+    waveModeRef.current = waveMode;
+  }, [waveMode]);
 
   useEffect(() => {
     const handleAnalysisState = (event: Event) => {
-      const customEvent = event as CustomEvent<{ active?: boolean }>;
-      setIsAnalyzing(Boolean(customEvent.detail?.active));
+      const customEvent = event as CustomEvent<{ mode?: InsightsWaveMode; active?: boolean }>;
+      const nextMode = customEvent.detail?.mode;
+
+      if (nextMode === "idle" || nextMode === "analyzing" || nextMode === "freezing") {
+        setWaveMode(nextMode);
+        return;
+      }
+
+      setWaveMode(customEvent.detail?.active ? "analyzing" : "idle");
     };
 
     window.addEventListener(INSIGHTS_ANALYSIS_EVENT, handleAnalysisState as EventListener);
@@ -180,21 +192,34 @@ export function InsightsWaveOverlay() {
       const delta = Math.min(40, time - previousTime);
       previousTime = time;
       animatedLayers.forEach((layer, index) => {
-        const targetAmplitude = analyzingTargetRef.current ? layer.activeAmplitude : layer.restAmplitude;
-        const targetOpacity = analyzingTargetRef.current ? layer.activeOpacity : layer.restOpacity;
-        const smoothing = analyzingTargetRef.current
+        const isActiveWave = waveModeRef.current === "analyzing" || waveModeRef.current === "freezing";
+        const targetAmplitude = isActiveWave ? layer.activeAmplitude : layer.restAmplitude;
+        const targetOpacity = isActiveWave ? layer.activeOpacity : layer.restOpacity;
+        const targetSpeed = isActiveWave ? 2.15 : 1;
+        const smoothing = isActiveWave
           ? 1 - Math.exp(-delta / 70)
           : 1 - Math.exp(-delta / 180);
+        const speedSmoothing = isActiveWave
+          ? 1 - Math.exp(-delta / 80)
+          : 1 - Math.exp(-delta / 220);
 
         amplitudeRefs.current[index] += (targetAmplitude - amplitudeRefs.current[index]) * smoothing;
         opacityRefs.current[index] += (targetOpacity - opacityRefs.current[index]) * smoothing;
+        speedRefs.current[index] += (targetSpeed - speedRefs.current[index]) * speedSmoothing;
 
-        const pulse = Math.sin((time / 1000 / layer.duration) * TWO_PI + layer.phaseOffset);
+        const elapsedSeconds = delta / 1000;
+        const liveSpeed = speedRefs.current[index];
+        pulsePhaseRefs.current[index] += elapsedSeconds * (TWO_PI / layer.duration) * liveSpeed;
+        motionPhaseRefs.current[index] += elapsedSeconds * (TWO_PI / layer.duration) * liveSpeed * 1.08;
+        detailPhaseRefs.current[index] += elapsedSeconds * (TWO_PI / (layer.duration * 0.76)) * liveSpeed * 1.22;
+        offsetPhaseRefs.current[index] += elapsedSeconds * (TWO_PI / (layer.duration * 1.28)) * liveSpeed * 1.35;
+
+        const pulse = Math.sin(pulsePhaseRefs.current[index] + layer.phaseOffset);
         const breathing = 0.72 + ((pulse + 1) / 2) * 0.56;
-        const motionPhase = (time / 1000 / layer.duration) * TWO_PI + layer.phaseOffset;
-        const detailPhase = (time / 1000 / (layer.duration * 0.76)) * TWO_PI;
-        const verticalOffset = Math.sin((time / 1000 / (layer.duration * 1.28)) * TWO_PI + layer.phaseOffset) *
-          (analyzingTargetRef.current ? 26 : 8);
+        const motionPhase = motionPhaseRefs.current[index] + layer.phaseOffset;
+        const detailPhase = detailPhaseRefs.current[index];
+        const verticalOffset = Math.sin(offsetPhaseRefs.current[index] + layer.phaseOffset) *
+          (isActiveWave ? 26 : 8);
         const liveAmplitude = amplitudeRefs.current[index] * breathing;
         const path = pathRefs.current[index];
         if (path) {
@@ -220,12 +245,12 @@ export function InsightsWaveOverlay() {
     <motion.div
       initial={false}
       animate={{
-        opacity: isAnalyzing ? 1 : 0.92,
+        opacity: waveMode === "analyzing" || waveMode === "freezing" ? 1 : 0.92,
       }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className="pointer-events-none absolute inset-x-[-6%] top-[-112px] z-50 h-[320px] overflow-visible"
+      className="pointer-events-none absolute inset-x-[-6%] top-[-112px] z-[90] h-[320px] overflow-visible"
       style={{
-        filter: isAnalyzing
+        filter: waveMode === "analyzing" || waveMode === "freezing"
           ? "drop-shadow(0 0 36px rgba(94,234,212,0.24))"
           : "drop-shadow(0 0 12px rgba(94,234,212,0.08))",
       }}
@@ -239,7 +264,14 @@ export function InsightsWaveOverlay() {
           className="absolute inset-0 h-full w-full overflow-visible"
         >
           <defs>
-            <linearGradient id={layer.gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient
+              id={layer.gradientId}
+              gradientUnits="userSpaceOnUse"
+              x1="0"
+              y1={String(layer.baseline)}
+              x2={String(VIEWBOX_WIDTH)}
+              y2={String(layer.baseline)}
+            >
               {layer.gradientStops.map((stop) => (
                 <stop key={`${layer.key}-${stop.offset}`} offset={stop.offset} stopColor={stop.color} />
               ))}

@@ -5,6 +5,7 @@ import type { AnalysisCluster, InsightHighlight, ScoreBreakdownEntry } from "@/l
 import { getAddress, isAddress, type Address } from "viem";
 
 const DISCOVERY_BONUS_POINTS = 12;
+const AI_RETRY_MESSAGE = "AI analysis failed. Please retry.";
 
 export type SettlementEngineInput = {
   title: string;
@@ -32,6 +33,14 @@ type GeminiEvaluation = {
   qualityRating: number;
   isBotFarm: boolean;
   clusterId: string;
+};
+
+type GeminiClusterNarrative = {
+  clusterId: string;
+  theme: string;
+  summary: string;
+  highlightTitle?: string;
+  highlightReason?: string;
 };
 
 type DisqualificationReason =
@@ -75,6 +84,34 @@ Every submission must appear exactly once in the array.
 Do not include markdown or code fences.
 `.trim();
 
+const GEMINI_CLUSTER_NARRATIVE_INSTRUCTION = `
+You are writing polished community insight summaries for a Web3 bounty dashboard.
+You will receive a bounty title, prompt, and a list of clusters. Each cluster includes:
+- clusterId
+- submissionCount
+- representative submission texts
+- earliest submission text
+
+Return a top-level JSON array.
+Each object must include:
+- clusterId: string
+- theme: short natural-language cluster title
+- summary: 1-2 sentence human-readable summary, max 180 chars
+- highlightTitle: short title for the best highlighted insight in this cluster
+- highlightReason: short reason explaining why the highlighted submission matters
+
+Important:
+- Write in the same language as the bounty prompt/title and the dominant submission language.
+- If the input is Chinese, output Chinese.
+- If the input is English, output English.
+- Do not use placeholder wording or generic labels like "General Feedback" unless truly necessary.
+- Do not include markdown or code fences.
+`.trim();
+
+function failAiAnalysis(): never {
+  throw new Error(AI_RETRY_MESSAGE);
+}
+
 function normalizeText(value: string) {
   return value
     .toLowerCase()
@@ -90,14 +127,6 @@ function sanitizeClusterId(value: string | undefined, fallback: string) {
     .replace(/^-+|-+$/g, "");
 
   return normalized || fallback;
-}
-
-function toTheme(clusterId: string) {
-  return clusterId
-    .split("-")
-    .filter(Boolean)
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join(" ") || "General Feedback";
 }
 
 function truncateText(value: string, limit: number) {
@@ -132,75 +161,79 @@ function compareBySubmittedAt(left: NormalizedSubmission, right: NormalizedSubmi
   return left.id - right.id;
 }
 
-function buildFallbackEvaluations(submissions: NormalizedSubmission[]): GeminiEvaluation[] {
-  const duplicateCounts = new Map<string, number>();
-
-  for (const submission of submissions) {
-    const normalized = normalizeText(submission.content);
-    duplicateCounts.set(normalized, (duplicateCounts.get(normalized) ?? 0) + 1);
-  }
-
-  return submissions.map((submission) => {
-    const normalized = normalizeText(submission.content);
-    const wordCount = normalized.split(/\s+/).filter(Boolean).length;
-    const duplicateCount = duplicateCounts.get(normalized) ?? 1;
-    const clusterId = sanitizeClusterId(
-      normalized.split(" ").slice(0, 5).join("-"),
-      `submission-${submission.id}`,
-    );
-
-    let qualityRating = 2;
-    if (wordCount >= 120) qualityRating = 5;
-    else if (wordCount >= 60) qualityRating = 4;
-    else if (wordCount >= 30) qualityRating = 3;
-    else if (wordCount < 10) qualityRating = 1;
-
-    const isBotFarm =
-      wordCount < 4 ||
-      normalized.length < 16 ||
-      duplicateCount >= 3;
-
-    return {
-      submissionId: submission.id,
-      qualityRating,
-      isBotFarm,
-      clusterId,
-    };
-  });
-}
-
 async function evaluateSubmissionsWithGemini(
   title: string,
   prompt: string,
   submissions: NormalizedSubmission[],
 ) {
-  try {
-    const evaluations = await requestGeminiJson<GeminiEvaluation[]>(
-      GEMINI_SYSTEM_INSTRUCTION,
-      JSON.stringify({
-        title,
-        prompt,
-        submissions: submissions.map((submission) => ({
-          id: submission.id,
-          walletAddress: submission.walletAddress,
-          content: submission.content,
-          submittedAt: submission.submittedAt.toISOString(),
-        })),
-      }),
-    );
+  const evaluations = await requestGeminiJson<GeminiEvaluation[]>(
+    GEMINI_SYSTEM_INSTRUCTION,
+    JSON.stringify({
+      title,
+      prompt,
+      submissions: submissions.map((submission) => ({
+        id: submission.id,
+        walletAddress: submission.walletAddress,
+        content: submission.content,
+        submittedAt: submission.submittedAt.toISOString(),
+      })),
+    }),
+  );
 
-    const sanitized = (evaluations ?? []).filter(
-      (item) => typeof item?.submissionId === "number",
-    );
+  const sanitized = (evaluations ?? []).filter(
+    (item) =>
+      typeof item?.submissionId === "number" &&
+      typeof item?.clusterId === "string",
+  );
 
-    if (sanitized.length > 0) {
-      return sanitized;
-    }
-  } catch {
-    // Fall back to heuristic scoring when Gemini is unavailable.
+  if (sanitized.length !== submissions.length) {
+    failAiAnalysis();
   }
 
-  return buildFallbackEvaluations(submissions);
+  return sanitized;
+}
+
+async function generateClusterNarratives(
+  title: string,
+  prompt: string,
+  clusters: Array<{
+    clusterId: string;
+    submissionCount: number;
+    earliestSubmission: string;
+    representativeTexts: string[];
+  }>,
+) {
+  if (clusters.length === 0) {
+    return [] as GeminiClusterNarrative[];
+  }
+
+  const narratives = await requestGeminiJson<GeminiClusterNarrative[]>(
+    GEMINI_CLUSTER_NARRATIVE_INSTRUCTION,
+    JSON.stringify({
+      title,
+      prompt,
+      clusters,
+    }),
+  );
+
+  const sanitized = (narratives ?? []).filter(
+    (item) =>
+      typeof item?.clusterId === "string" &&
+      typeof item?.theme === "string" &&
+      typeof item?.summary === "string",
+  );
+
+  if (sanitized.length !== clusters.length) {
+    failAiAnalysis();
+  }
+
+  return sanitized.map((item) => ({
+    clusterId: sanitizeClusterId(item.clusterId, item.clusterId),
+    theme: item.theme.trim(),
+    summary: truncateText(item.summary.trim(), 180),
+    highlightTitle: item.highlightTitle?.trim(),
+    highlightReason: item.highlightReason?.trim(),
+  }));
 }
 
 function sanitizeEvaluations(
@@ -221,14 +254,11 @@ function sanitizeEvaluations(
   const sanitized: GeminiEvaluation[] = [];
   for (const submission of submissions) {
     const evaluation = bySubmissionId.get(submission.id);
-    sanitized.push(
-      evaluation ?? {
-        submissionId: submission.id,
-        qualityRating: 2,
-        isBotFarm: false,
-        clusterId: `submission-${submission.id}`,
-      },
-    );
+    if (!evaluation) {
+      failAiAnalysis();
+    }
+
+    sanitized.push(evaluation);
   }
 
   return sanitized;
@@ -309,7 +339,9 @@ function buildDuplicateGroups(submissions: NormalizedSubmission[]) {
   return [...groups.values()].filter((group) => group.length > 1);
 }
 
-function buildClusters(
+async function buildClusterArtifacts(
+  title: string,
+  prompt: string,
   submissions: NormalizedSubmission[],
   evaluationBySubmissionId: Map<number, GeminiEvaluation>,
 ) {
@@ -322,28 +354,61 @@ function buildClusters(
     grouped.set(clusterId, current);
   }
 
-  return [...grouped.entries()].map(([clusterId, clusterSubmissions]) => {
+  const groupedEntries = [...grouped.entries()].map(([clusterId, clusterSubmissions]) => {
     const ordered = [...clusterSubmissions].sort(compareBySubmittedAt);
-    const summarySource = ordered[0]?.content ?? "Community feedback cluster";
     const signal = ordered
       .map((submission) => truncateText(submission.content, 180))
       .filter(Boolean)
       .slice(0, 3);
 
     return {
+      clusterId,
+      ordered,
+      signal,
+    };
+  });
+
+  const narrativeMap = new Map(
+    (
+      await generateClusterNarratives(
+        title,
+        prompt,
+        groupedEntries.map((entry) => ({
+          clusterId: entry.clusterId,
+          submissionCount: entry.ordered.length,
+          earliestSubmission: entry.ordered[0]?.content ?? "",
+          representativeTexts: entry.signal,
+        })),
+      )
+    ).map((item) => [sanitizeClusterId(item.clusterId, item.clusterId), item]),
+  );
+
+  const clusters = groupedEntries.map(({ clusterId, ordered, signal }) => {
+    const narrative = narrativeMap.get(clusterId);
+    if (!narrative) {
+      failAiAnalysis();
+    }
+
+    return {
       id: clusterId,
-      theme: toTheme(clusterId),
+      theme: narrative.theme,
       count: ordered.length,
-      summary: truncateText(summarySource, 180),
+      summary: narrative.summary,
       signal,
       submissionIds: ordered.map((submission) => submission.id),
     } satisfies AnalysisCluster;
   });
+
+  return {
+    clusters,
+    narrativeMap,
+  };
 }
 
 function buildHighlights(
   clusters: AnalysisCluster[],
   submissions: NormalizedSubmission[],
+  clusterNarratives?: Map<string, GeminiClusterNarrative>,
 ): InsightHighlight[] {
   const bySubmissionId = new Map(submissions.map((submission) => [submission.id, submission]));
 
@@ -357,10 +422,15 @@ function buildHighlights(
       return [];
     }
 
+    const narrative = clusterNarratives?.get(cluster.id);
+    if (!narrative) {
+      failAiAnalysis();
+    }
+
     return [{
       submissionId: earliest.id,
-      title: cluster.theme,
-      reason: `Earliest eligible submission in the "${cluster.theme}" cluster.`,
+      title: narrative.highlightTitle || cluster.theme,
+      reason: narrative.highlightReason || `This is the earliest eligible and clearly expressed submission in the "${cluster.theme}" cluster.`,
       bonusType: "discovery",
       bonusPoints: DISCOVERY_BONUS_POINTS,
     } satisfies InsightHighlight];
@@ -440,8 +510,13 @@ export async function runSettlementEngine(
     });
   }
 
-  const clusters = buildClusters(eligibleSubmissions, evaluationBySubmissionId);
-  const highlights = buildHighlights(clusters, eligibleSubmissions);
+  const { clusters, narrativeMap } = await buildClusterArtifacts(
+    input.title,
+    input.prompt,
+    eligibleSubmissions,
+    evaluationBySubmissionId,
+  );
+  const highlights = buildHighlights(clusters, eligibleSubmissions, narrativeMap);
 
   const scoringInput: SubmissionForScoring[] = eligibleSubmissions.map((submission) => ({
     id: submission.id,
