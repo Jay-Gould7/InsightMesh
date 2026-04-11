@@ -1,19 +1,31 @@
 # InsightMesh
 
-> Collect better feedback. Reward real insight.
-
-InsightMesh is an AI-native feedback bounty app built on Conflux Network.
-Creators lock a USDT0 reward pool on eSpace, publish the bounty on Core Space, collect gas-sponsored responses, run AI analysis with anti-Sybil filtering, freeze a payout snapshot, and then settle rewards through an eSpace relayer after creator approval.
+AI-native on-chain feedback bounties on Conflux.
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Conflux](https://img.shields.io/badge/built%20on-Conflux-blue)](https://confluxnetwork.org)
 [![Hackathon](https://img.shields.io/badge/Global%20Hackfest%202026-green)](https://github.com/conflux-fans/global-hackfest-2026)
 
+## Overview
+
+InsightMesh turns community feedback into a rewardable on-chain workflow.
+
+Creators lock a USDT0 reward pool on Conflux eSpace, publish a bounty on Core Space, collect gas-sponsored survey responses, run AI analysis with anti-Sybil filtering, freeze a payout snapshot, and then settle rewards through an eSpace relayer after creator approval.
+
+What makes it different:
+
+- real funds are locked before the bounty becomes active
+- participant submissions are written to Core Space with zero gas for the respondent
+- AI is used for survey generation, clustering, highlights, and scoring
+- anti-Sybil filtering is built into the payout pipeline
+- final reward distribution is transparent and executed on-chain
+
 ## Hackathon Information
 
-- Event: Global Hackfest 2026
-- Track: Open Innovation
-- Stack Focus: Conflux Core Space + eSpace + Gas Sponsorship + AI
+- **Event**: Global Hackfest 2026
+- **Focus Area**: Open Innovation - Build anything you want using Conflux features
+- **Team**: InsightMesh
+- **Submission Date**: 2026-04-20 @ 11:59:59
 
 ## Team
 
@@ -22,334 +34,309 @@ Creators lock a USDT0 reward pool on eSpace, publish the bounty on Core Space, c
 | Gould | Full-stack Development | [@Jay-Gould7](https://github.com/Jay-Gould7) | gold_xxtxx |
 | vivid | Operations and Community | [@wkarry450-max](https://github.com/wkarry450-max) | vividzfc |
 
-## Problem
+## Problem Statement
 
-Most feedback tools collect responses but do not reward the people who provide the best ideas.
+**What problem does your project solve?**
 
-- Web2 surveys usually end as CSV files with no incentive layer.
-- Open-ended feedback is noisy, repetitive, and hard to summarize.
-- On-chain governance tools are optimized for voting, not nuanced product or community insight.
-- Gas costs and wallet friction reduce participation quality and quantity.
+Open-ended feedback is valuable, but current tools do a poor job of rewarding contributors and surfacing the best ideas.
 
-## What InsightMesh Does
+- **Why this problem matters**: teams spend time collecting feedback, but the highest-signal insights are buried in long response lists or static CSV exports
+- **Who is affected**: product teams, protocol teams, DAO operators, hackathon organizers, and community contributors who provide useful feedback without compensation
+- **Current limitations**: most survey tools are off-chain, noisy, and incentive-free; most on-chain governance tools focus on binary voting rather than rich qualitative insight
+- **How blockchain helps**: blockchain makes reward locking, contribution records, and settlement auditable, while Conflux Gas Sponsorship removes participation friction
 
-InsightMesh turns feedback collection into a rewardable on-chain workflow:
+## Solution
 
-1. A creator drafts a bounty and uses AI to generate a structured survey.
-2. The creator deposits USDT0 into an eSpace reward vault from their own wallet.
-3. The creator publishes the bounty on Core Space.
-4. Participants submit feedback on Core Space with sponsored gas and bind an eSpace payout address.
-5. The creator locks submissions, runs AI analysis, reviews risk flags, and freezes a payout snapshot.
-6. The creator signs approval and the backend relayer distributes USDT0 on eSpace.
+**How does your project address the problem?**
 
-This MVP prioritizes a complete demo loop over full trustlessness:
+InsightMesh combines dual-space Conflux architecture with AI analysis:
 
-- reward pool is really locked on-chain
-- participant submission is really written on Core Space
-- payout distribution is really executed on eSpace
-- final settlement is relayer-driven after creator approval
+1. **Create and fund**: the creator defines a prompt, generates or edits a survey, and deposits USDT0 into an eSpace reward vault
+2. **Publish and collect**: the bounty is published on Core Space and participants submit feedback through gas-sponsored transactions
+3. **Analyze and review**: the creator locks submissions, runs AI analysis, reviews clusters, highlights, disqualified entries, and high-risk entries
+4. **Freeze and settle**: the creator freezes a payout snapshot, signs approval, and the backend relayer distributes rewards on eSpace
 
-## Why Conflux
+How it improves on existing solutions:
 
-InsightMesh is designed around Conflux's dual-space model:
+- contributors can be rewarded directly instead of contributing for free
+- creators get clustered insights instead of raw answer dumps
+- submission and settlement states are verifiable on-chain
+- anti-Sybil filtering reduces abuse in paid feedback campaigns
 
-- Core Space handles the high-frequency user actions: bounty creation status updates and gas-sponsored submissions.
-- eSpace handles the money leg: USDT0 deposit and final ERC-20 distribution.
-- Gas Sponsorship removes the need for participants to hold CFX just to submit feedback.
-- Sponsor setup is done for `SubmissionRegistry` through Conflux's built-in sponsorship flow after deployment.
+Benefits:
 
-In short:
+- better signal extraction for creators
+- better incentives for respondents
+- a compelling end-to-end use case for Conflux Core Space + eSpace
 
-- Core Space = interaction layer
-- eSpace = settlement layer
+## Go-to-Market Plan (required)
 
-## Anti-Sybil Design
+### Target Users
 
-Yes, this belongs in the README. It is one of the most important parts of the current MVP.
+- **Web3 product teams**: collect structured feedback before launching features or wallets
+- **DAO and protocol operators**: reward the most valuable governance and product feedback
+- **Hackathon and event organizers**: collect post-event insights and reward the best contributors
 
-InsightMesh does not claim perfect Sybil resistance yet, but the app already includes a meaningful anti-Sybil pipeline:
+### Why they would use it
 
-1. One submission per Core address per bounty is enforced on-chain.
-2. Each submission permanently binds one eSpace payout address.
-3. If multiple submissions point to the same payout address, only the earliest remains eligible for rewards.
-4. The backend checks the eSpace nonce of each payout wallet. Wallets with zero transaction history are disqualified.
-5. AI analysis flags likely coordinated bot-farm style responses as high risk.
-6. High-risk responses are heavily penalized in scoring: quality reduced, discovery bonus disabled, consensus bonus disabled.
-7. Before freezing the snapshot, the creator can manually exclude high-risk submissions from the final payout calculation.
-8. Consensus bonus is non-linear and saturating, so repeated similar responses have diminishing marginal reward impact.
+- it is easier than building an internal review and payout workflow
+- gas-sponsored submit lowers friction for participants
+- reward pools create stronger contributor incentives
+- AI reduces manual triage work for organizers and product teams
 
-Important trust-model note:
+### Distribution Plan
 
-- This is a heuristic anti-Sybil layer for an MVP, not a full identity or proof-of-personhood system.
+- launch first inside the Conflux ecosystem as a native showcase of Gas Sponsorship and dual-space architecture
+- target wallet teams, dApp teams, and ecosystem campaigns that already need structured feedback loops
+- use demo bounties and hackathon/event feedback campaigns as initial growth channels
 
-## Current MVP Features
+### Milestones and Metrics
 
-### Creator Flow
+- number of active bounties
+- number of funded reward pools
+- number of sponsored submissions
+- average submissions per bounty
+- creator retention and repeat bounty creation
+- total USDT0 settled through the app
 
-- AI-generated survey creation from a natural-language prompt
-- Manual survey editing before launch
-- Add, edit, and delete questions
-- Add, edit, and delete options
-- Choose text, single-select, multi-select, and rating questions
-- Support `Other` options with free-text input
-- Creator-funded `approve + deposit` flow on eSpace
-- Creator-published bounty creation on Core Space
-- Creator-only insights page
-- Lock, unlock, re-analyze, and freeze before settlement
-- Preview payout distribution before snapshot freeze
-- Creator signature required before final settlement
+### Ecosystem Fit
 
-### Participant Flow
+InsightMesh is a natural fit for Conflux because it makes Core Space and eSpace work together in one user-facing product:
 
-- Gas-sponsored submission on Core Space
-- No CFX required for sponsored submit transactions
-- eSpace payout address can be entered manually
-- Connected eSpace wallet can be used to auto-fill the payout address
-- Before settlement, non-creators can only view their own submission details
-- After settlement, all submission details become visible to everyone
+- Core Space handles the interaction-heavy side
+- eSpace handles ERC-20 settlement
+- Gas Sponsorship creates a smoother participation funnel
 
-### Insight and Settlement Flow
+## Conflux Integration
 
-- AI cluster summaries
-- AI-distilled highlights
-- Score breakdown preview
-- High-risk review panel
-- Disqualified submission panel
-- Frozen payout snapshot saved in the database
-- eSpace relayer settlement after creator approval
+**How does your project leverage Conflux features?**
 
-## What Is Not Claimed Yet
+- [x] **Core Space** - `BountyRegistry` and `SubmissionRegistry` manage bounty state and sponsored submissions
+- [x] **eSpace** - `RewardVault` holds USDT0 deposits and distributes final rewards
+- [ ] **Cross-Space Bridge** - not part of the current MVP; relayer-based settlement is used instead
+- [x] **Gas Sponsorship** - participant submit transactions are sponsored through Conflux sponsor configuration
+- [x] **Built-in Contracts** - `SponsorWhitelistControl` is used in the sponsor setup script
+- [x] **Tree-Graph Consensus** - the product benefits from low-friction, high-throughput submission handling for bursty survey participation
 
-To keep the README aligned with the actual codebase:
+### Partner Integrations
 
-- The app does not currently expose the contract `support()` action in the UI.
-- Settlement is not fully automated through `CrossSpaceCall` yet.
-- The creator can influence the final payout set by manually excluding high-risk submissions before freezing.
-- Anti-Sybil is strong enough for a hackathon MVP, but not a complete identity defense system.
+- [ ] **Privy** - not used
+- [ ] **Pyth Network** - not used
+- [ ] **LayerZero** - not used
+- [x] **Other** - Google Gemini API for survey generation and analysis
 
-## State Machine
+## Features
 
-The implemented bounty lifecycle is:
+### Core Features
 
-`PENDING_FUNDING -> ACTIVE -> ANALYZING -> READY_TO_SETTLE -> SETTLED`
+- **AI Survey Generation** - creators can generate a structured questionnaire from a natural-language prompt
+- **Gas-Sponsored Feedback Submission** - participants submit on Core Space without needing CFX for gas
+- **Dual-Space Reward Flow** - funds are deposited on eSpace while interaction flow stays on Core Space
 
-Notes:
+### Advanced Features
 
-- `PENDING_FUNDING`: draft exists in the database, but reward pool is not yet verified on-chain
-- `ACTIVE`: deposit and Core creation have both been verified
-- `ANALYZING`: submissions are locked; creator can run AI analysis preview
-- `READY_TO_SETTLE`: snapshot is frozen and settlement is enabled
-- `SETTLED`: reward distribution completed
+- **Manual Survey Editing** - creators can add, edit, and delete questions and options before launch
+- **Anti-Sybil Scoring Pipeline** - duplicate payout addresses, zero-nonce payout wallets, and bot-farm style responses are filtered or penalized
+- **Snapshot-Based Settlement** - creators can preview, review, freeze, and then approve final distribution
+
+### Future Features (Roadmap)
+
+- **CrossSpaceCall Automation** - replace relayer-based settlement with tighter cross-space execution
+- **Support Action UI** - expose on-chain `support()` in the current product interface
+- **Reputation and Multi-Token Rewards** - extend beyond single-bounty scoring and single-token pools
+
+## Technology Stack
+
+### Frontend
+
+- **Framework**: Next.js 15 App Router, React 19
+- **Styling**: Tailwind CSS v4
+- **State Management**: React state and context providers
+- **Web3 Integration**: `js-conflux-sdk`, `viem`, `ethers`
+
+### Backend
+
+- **Runtime**: Node.js
+- **Framework**: Next.js Route Handlers
+- **Database**: Prisma ORM + SQLite
+- **APIs**: REST-style app route handlers
+
+### Blockchain
+
+- **Network**: Conflux Core Space + eSpace
+- **Smart Contracts**: Solidity 0.8.24
+- **Development**: Hardhat
+- **Testing**: Hardhat + Mocha
+
+### Infrastructure
+
+- **Hosting**: standard Next.js deployment target; local development is fully supported
+- **Storage**: SQLite for MVP-scale persistence
+- **Monitoring**: no dedicated monitoring stack in the current MVP
 
 ## Architecture
 
 ```text
-Creator
-  |- eSpace wallet: approve + deposit USDT0
-  |- Fluent wallet: create bounty on Core
+Creator Wallets
+  |- eSpace wallet -> approve + deposit USDT0
+  |- Fluent wallet -> create bounty on Core
   v
-Next.js App Router
-  |- Route Handlers
+Next.js Frontend
+  |- create bounty
+  |- submit survey
+  |- insights review
+  |- settlement approval
+  v
+Next.js Route Handlers
   |- Prisma + SQLite
-  |- AI provider client
-  |- Relayer logic
+  |- Gemini integration
+  |- Core status relayer
+  |- eSpace settlement relayer
   v
-Core Space
+Conflux Core Space
   |- BountyRegistry
   |- SubmissionRegistry
-  |- Gas sponsorship for submit
+  |- sponsored submit transactions
   v
-eSpace
+Conflux eSpace
   |- RewardVault
-  |- USDT0 settlement
+  |- USDT0 deposit and distribution
 ```
 
-## Conflux Integration
+**High-level architecture description:**
 
-- Core Space contracts
-  - `BountyRegistry`
-  - `SubmissionRegistry`
-- eSpace contract
-  - `RewardVault`
-- Built-in Conflux capability
-  - Gas Sponsorship for participant submissions
-- Token
-  - USDT0 on eSpace testnet
+The frontend orchestrates a dual-wallet flow. Draft bounty data and raw survey content are stored in SQLite through Prisma. Core Space stores bounty lifecycle and submission proofs. eSpace stores the actual reward pool and executes the final settlement. AI analysis happens off-chain, but its results are turned into a frozen score snapshot before distribution.
 
-## Deployed Contracts
+## Prerequisites
 
-Current testnet deployment used by this repo:
+Before you begin, ensure you have the following installed:
 
-| Contract | Network | Address | Explorer |
-|----------|---------|---------|----------|
-| BountyRegistry | Core Testnet | `cfxtest:acayncftt1mtpnwhkm80v3sw5snbwkty8y2vm31evk` | [ConfluxScan](https://testnet.confluxscan.net/address/cfxtest:acayncftt1mtpnwhkm80v3sw5snbwkty8y2vm31evk) |
-| SubmissionRegistry | Core Testnet | `cfxtest:acbn0bar1rbh0ntu5yumrn3d6ug96z61vufd4d7rvf` | [ConfluxScan](https://testnet.confluxscan.net/address/cfxtest:acbn0bar1rbh0ntu5yumrn3d6ug96z61vufd4d7rvf) |
-| RewardVault | eSpace Testnet | `0xd544C0680baeDd71890fFd7BaAe7930D2425C657` | [ConfluxScan](https://evmtestnet.confluxscan.net/address/0xd544C0680baeDd71890fFd7BaAe7930D2425C657) |
-| USDT0 | eSpace Testnet | `0x4d1beB67e8f0102d5c983c26FDf0b7C6FFF37a0c` | [ConfluxScan](https://evmtestnet.confluxscan.net/address/0x4d1beB67e8f0102d5c983c26FDf0b7C6FFF37a0c) |
+- **Node.js** (v18.0.0 or higher)
+- **npm**
+- **Git**
+- **Conflux Wallet**: Fluent Wallet for Core Space
+- **Injected EVM Wallet**: MetaMask or another injected EVM wallet for eSpace
 
-### Contract Surface
+### Development Tools (Optional)
 
-#### Core: BountyRegistry
+- **Hardhat** - smart contract compile and test
 
-- `createBounty(string title, string metadataHash, uint256 rewardAmount, uint256 deadline) returns (uint256)`
-- `setSubmissionRegistry(address submissionRegistryAddress)`
-- `updateStatus(uint256 bountyId, uint8 status)`
-- `getSubmissionRules(uint256 bountyId)`
-- `incrementSubmissionCount(uint256 bountyId)`
+## Installation & Setup
 
-#### Core: SubmissionRegistry
-
-- `submit(uint256 bountyId, bytes32 contentHash, address payoutAddress)`
-- `support(uint256 bountyId, uint256 submissionId)`
-
-#### eSpace: RewardVault
-
-- `deposit(uint256 bountyId, uint256 amount)`
-- `distribute(uint256 bountyId, address[] recipients, uint256[] amounts)`
-
-## Tech Stack
-
-### Frontend
-
-- Next.js 15 App Router
-- React 19
-- Tailwind CSS v4
-- Framer Motion
-
-### Backend
-
-- Next.js Route Handlers
-- Prisma
-- SQLite
-- Zod
-
-### Chain Integration
-
-- `js-conflux-sdk` for Core Space interactions
-- `viem` and `ethers` for eSpace and contract tooling
-- Hardhat for compile and test
-
-### AI
-
-- Google Gemini API
-
-## Local Setup
-
-### Prerequisites
-
-- Node.js 18+
-- npm
-- Fluent Wallet for Core Space
-- An injected EVM wallet for eSpace
-  - MetaMask works
-  - other injected wallets can also be selected in the wallet hub
-
-### Install
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/Jay-Gould7/InsightMesh.git
 cd InsightMesh
+```
+
+### 2. Install Dependencies
+
+```bash
 npm install
 ```
 
-### Environment
+### 3. Environment Configuration
 
-Create `.env` from `.env.example`, then fill the values you need.
+Create the environment file:
 
-Required groups:
+```bash
+cp .env.example .env
+```
 
-- app
-  - `DATABASE_URL`
-  - `NEXT_PUBLIC_APP_NAME`
-  - `NEXT_PUBLIC_DEMO_MODE`
-- AI
-  - `GEMINI_API_KEY`
-  - `GEMINI_MODEL`
-- Core Space
-  - `CONFLUX_CORE_RPC_URL`
-  - `CONFLUX_CORE_NETWORK_ID`
-  - `CONFLUX_CORE_REGISTRY_ADDRESS`
-  - `CONFLUX_CORE_SUBMISSION_ADDRESS`
-  - `CONFLUX_CORE_RELAYER_PRIVATE_KEY`
-- eSpace
-  - `ESPACE_RPC_URL`
-  - `ESPACE_CHAIN_ID`
-  - `ESPACE_REWARD_VAULT_ADDRESS`
-  - `ESPACE_USDT0_ADDRESS`
-  - `ESPACE_RELAYER_PRIVATE_KEY`
+Edit `.env` with your configuration.
 
-Notes:
+Required app variables:
 
-- `NEXT_PUBLIC_DEMO_MODE="true"` lets you run the UI without live chain verification.
-- Production-like local testing should use `NEXT_PUBLIC_DEMO_MODE="false"` with real testnet config.
-- The two relayer keys are used by the backend for:
-  - Core bounty status updates during lock/unlock/freeze
-  - eSpace reward distribution during final settlement
+```env
+DATABASE_URL="file:./dev.db"
+NEXT_PUBLIC_APP_NAME="InsightMesh"
+NEXT_PUBLIC_DEMO_MODE="true"
+GEMINI_API_KEY=""
+GEMINI_MODEL="gemini-3-flash-preview"
+CONFLUX_CORE_RPC_URL="https://test.confluxrpc.com"
+CONFLUX_CORE_NETWORK_ID="1"
+CONFLUX_CORE_REGISTRY_ADDRESS=""
+CONFLUX_CORE_SUBMISSION_ADDRESS=""
+CONFLUX_CORE_RELAYER_PRIVATE_KEY=""
+ESPACE_RPC_URL="https://evmtestnet.confluxrpc.com"
+ESPACE_CHAIN_ID="71"
+ESPACE_REWARD_VAULT_ADDRESS=""
+ESPACE_USDT0_ADDRESS=""
+ESPACE_RELAYER_PRIVATE_KEY=""
+```
 
-### Database
+What the two private keys are used for:
+
+- `CONFLUX_CORE_RELAYER_PRIVATE_KEY`
+  - deploy Core contracts
+  - configure sponsor funding for `SubmissionRegistry`
+  - update Core bounty status during lock, unlock, and freeze
+- `ESPACE_RELAYER_PRIVATE_KEY`
+  - deploy or administer `RewardVault`
+  - execute final USDT0 settlement on eSpace
+
+### 4. Smart Contract Deployment
+
+```bash
+npm run contracts:compile
+node scripts/deploy-espace.mjs
+node scripts/deploy-core.mjs
+```
+
+### 5. Configure Gas Sponsorship
+
+After Core deployment, fund the sponsor configuration for `SubmissionRegistry`:
+
+```bash
+node scripts/setup-sponsor.mjs
+```
+
+Important notes:
+
+- the Core relayer wallet must hold Core Testnet CFX
+- this script configures whitelist, gas sponsorship, and storage collateral sponsorship
+- if sponsor funds run low, run the script again to top them up
+
+Optional sponsor env values:
+
+```env
+SPONSOR_GAS_UPPER_BOUND="1000000000000000"
+SPONSOR_GAS_VALUE="1000000000000000000"
+SPONSOR_COLLATERAL_VALUE="1000000000000000000"
+```
+
+### 6. Set Up Database
 
 ```bash
 npm run db:generate
 npm run db:push
 ```
 
-Optional demo seed:
+Optional seed data:
 
 ```bash
 npm run db:seed
 ```
 
-### Run in Development
+### 7. Start Development Servers
 
 ```bash
 npm run dev
 ```
 
-### Run in Production Mode
+Your application should now be running at `http://localhost:3000`
+
+For production-mode preview:
 
 ```bash
 npm run build
 npm run start
 ```
 
-## Smart Contract Deployment
-
-Optional deployment flow:
-
-```bash
-npm run contracts:compile
-node scripts/deploy-espace.mjs
-node scripts/deploy-core.mjs
-node scripts/setup-sponsor.mjs
-```
-
-## Usage
-
-### As a Creator
-
-1. Connect Fluent for Core Space and an eSpace wallet for funding.
-2. Create or AI-generate the survey, then edit questions if needed.
-3. Choose reward amount and deadline.
-4. Approve USDT0 and deposit into `RewardVault` from eSpace.
-5. Confirm Core bounty creation in Fluent.
-6. Wait for backend verification to activate the bounty.
-7. When enough responses arrive, lock submissions.
-8. Run AI analysis preview on the Insights page.
-9. Review highlights, clusters, disqualified items, and high-risk items.
-10. Optionally exclude high-risk submissions.
-11. Freeze the snapshot.
-12. Sign settlement approval and let the relayer distribute rewards.
-
-### As a Participant
-
-1. Connect Fluent.
-2. Browse active bounties.
-3. Fill the survey.
-4. Enter an eSpace payout address, or auto-fill it from a connected eSpace wallet.
-5. Submit through the sponsored Core transaction flow.
-6. Track outcome after the bounty is settled.
-
 ## Testing
+
+### Run Tests
 
 ```bash
 npm run typecheck
@@ -357,47 +344,253 @@ npm run contracts:test
 npm run build
 ```
 
-## Known Limitations
+### Test Coverage
 
-- `CrossSpaceCall` automation is not implemented yet.
-- Final settlement is relayer-based, not fully trustless.
-- High-risk AI flags are heuristic and can require creator judgment.
-- Anti-Sybil protection is practical for an MVP but not identity-grade.
-- SQLite is used for demo scale; production should move to a stronger database.
-- The `support()` contract primitive exists but is not yet wired into the current UI.
+The current MVP validates:
+
+- smart contract behavior through Hardhat tests
+- application type safety through TypeScript
+- production build integrity through `next build`
+
+Dedicated coverage reporting is not yet configured.
+
+## Usage
+
+### Getting Started
+
+1. **Connect Wallets**
+   - connect Fluent for Core Space actions
+   - connect an eSpace wallet for funding or payout address autofill
+
+2. **Launch a Bounty**
+   - generate or edit survey questions
+   - set reward amount and deadline
+   - approve and deposit USDT0 on eSpace
+   - confirm Core bounty creation in Fluent
+
+3. **Run Analysis and Settle**
+   - lock submissions
+   - run AI analysis
+   - review clusters, highlights, high-risk entries, and preview payout
+   - freeze snapshot
+   - sign approval and settle
+
+### Example Workflows
+
+#### Workflow 1: Creator Launch and Settlement
+
+```text
+1. Connect Fluent and an eSpace wallet
+2. Create the survey
+3. Deposit USDT0 into RewardVault
+4. Publish the bounty on Core Space
+5. Wait for participant submissions
+6. Lock submissions
+7. Run AI analysis preview
+8. Optionally exclude high-risk entries
+9. Freeze snapshot
+10. Sign and settle rewards
+```
+
+#### Workflow 2: Participant Submission
+
+```text
+1. Connect Fluent
+2. Open an active bounty
+3. Fill in the survey
+4. Enter an eSpace payout address
+5. Submit through the sponsored Core transaction
+6. Check results after settlement
+```
+
+## Demo
+
+### Live Demo
+
+- **URL**: local demo / hackathon walkthrough build
+- **Test Account**: not provided publicly
+
+### Demo Video
+
+- **YouTube**: pending upload
+- **Duration**: pending upload
+
+### Screenshots
+
+- Main Interface: pending submission assets
+- Insights Page: pending submission assets
+- Settlement Flow: pending submission assets
+
+## Smart Contracts
+
+### Deployed Contracts
+
+#### Testnet
+
+| Contract | Address | Explorer |
+|----------|---------|----------|
+| BountyRegistry | `cfxtest:acayncftt1mtpnwhkm80v3sw5snbwkty8y2vm31evk` | [View on ConfluxScan](https://testnet.confluxscan.net/address/cfxtest:acayncftt1mtpnwhkm80v3sw5snbwkty8y2vm31evk) |
+| SubmissionRegistry | `cfxtest:acbn0bar1rbh0ntu5yumrn3d6ug96z61vufd4d7rvf` | [View on ConfluxScan](https://testnet.confluxscan.net/address/cfxtest:acbn0bar1rbh0ntu5yumrn3d6ug96z61vufd4d7rvf) |
+| RewardVault | `0xd544C0680baeDd71890fFd7BaAe7930D2425C657` | [View on ConfluxScan](https://evmtestnet.confluxscan.net/address/0xd544C0680baeDd71890fFd7BaAe7930D2425C657) |
+| USDT0 | `0x4d1beB67e8f0102d5c983c26FDf0b7C6FFF37a0c` | [View on ConfluxScan](https://evmtestnet.confluxscan.net/address/0x4d1beB67e8f0102d5c983c26FDf0b7C6FFF37a0c) |
+
+### Contract Interfaces
+
+#### BountyRegistry
+
+```solidity
+interface BountyRegistry {
+    function createBounty(string title, string metadataHash, uint256 rewardAmount, uint256 deadline) external returns (uint256);
+    function setSubmissionRegistry(address submissionRegistryAddress) external;
+    function updateStatus(uint256 bountyId, uint8 status) external;
+    function getSubmissionRules(uint256 bountyId) external view returns (uint256, uint8);
+}
+```
+
+#### SubmissionRegistry
+
+```solidity
+interface SubmissionRegistry {
+    function submit(uint256 bountyId, bytes32 contentHash, address payoutAddress) external;
+    function support(uint256 bountyId, uint256 submissionId) external;
+}
+```
+
+#### RewardVault
+
+```solidity
+interface RewardVault {
+    function deposit(uint256 bountyId, uint256 amount) external;
+    function distribute(uint256 bountyId, address[] calldata recipients, uint256[] calldata amounts) external;
+}
+```
+
+## API Documentation
+
+### REST Endpoints
+
+#### Core Product Endpoints
+
+```text
+GET    /api/health
+GET    /api/bounty
+POST   /api/bounty
+GET    /api/bounty/[id]
+POST   /api/bounty/[id]
+POST   /api/bounty/[id]/activate
+POST   /api/submission
+POST   /api/ai/generate-survey
+POST   /api/ai/analyze
+POST   /api/ai/score
+POST   /api/settle
+```
+
+#### Endpoint Roles
+
+- `/api/bounty` - create draft bounties and list visible bounties
+- `/api/bounty/[id]/activate` - verify deposit and Core creation before activation
+- `/api/bounty/[id]` - lock or unlock review state
+- `/api/submission` - verify and store a sponsored Core submission
+- `/api/ai/generate-survey` - create survey questions from prompt input
+- `/api/ai/analyze` - generate AI preview analysis while locked
+- `/api/ai/score` - freeze the final snapshot and save payout entries
+- `/api/settle` - verify creator approval signature and trigger reward distribution
+
+## Security
+
+### Security Measures
+
+- **On-chain Reward Locking**: a bounty only becomes active after reward deposit and Core publish are both verified
+- **Creator Access Control**: only the creator can access the insights page, run analysis, freeze a snapshot, and settle
+- **Input Validation**: route handlers validate request payloads before execution
+- **Signature-Gated Settlement**: final settlement requires creator approval before relayer distribution
+- **Anti-Sybil Filtering**: duplicate payout addresses, zero-nonce payout wallets, bot-farm style responses, and manual exclusion review are part of the payout pipeline
+
+### Known Security Considerations
+
+- settlement is still relayer-based, so the MVP is not fully trustless
+- anti-Sybil is heuristic, not identity-grade
+- sponsor balance must be monitored so user gas does not unexpectedly fall back
+- demo mode bypasses live chain verification and should not be treated as production behavior
+
+## Known Issues & Limitations
+
+### Current Limitations
+
+- **No CrossSpaceCall Settlement**: the MVP uses relayer-based settlement rather than direct cross-space automation
+- **Support UI Not Exposed**: the contract primitive exists, but the current frontend does not expose it
+- **Single Public AI Path**: README and demo flow assume Gemini as the supported provider
+
+### Known Issues
+
+- **Wallet Network Switching**: Fluent and injected EVM wallets can require manual network switching during some flows
+- **Sponsor Balance Maintenance**: sponsored submit depends on operator-funded gas and collateral balances
+
+### Future Improvements
+
+- stronger payout-address level Sybil defenses
+- richer snapshot history and audit tooling
+- broader token support and more autonomous settlement flow
 
 ## Roadmap
 
-### Near-Term
+### Phase 1 (Hackathon) [done]
 
-- Expose support actions in the UI
-- Improve payout-address level anti-Sybil controls further
-- Add richer analysis history and snapshot audit views
-- Improve sponsor balance monitoring and operator tooling
+- [x] Core contracts for bounty state, submissions, and settlement vault
+- [x] AI-powered survey generation
+- [x] Gas-sponsored participant submission
+- [x] AI analysis, high-risk review, and snapshot freeze flow
+- [x] eSpace USDT0 settlement with creator approval
 
-### Stretch Goals
+### Phase 2 (Post-Hackathon)
 
-- CrossSpaceCall-based settlement automation
-- On-chain score anchoring and reputation
-- Multi-token reward pools
-- Mainnet deployment
+- [ ] expose support actions in the UI
+- [ ] improve anti-Sybil controls further
+- [ ] add richer analytics and review history
+- [ ] improve operator tooling for sponsor and settlement management
 
-## Demo Assets
+### Phase 3 (Future)
 
-- Demo video: pending upload
-- Participant intro video: pending upload
+- [ ] CrossSpaceCall-based settlement
+- [ ] on-chain reputation and score anchoring
+- [ ] multi-token reward pools
+- [ ] mainnet deployment
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE).
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
-- Conflux Network for dual-space architecture and gas sponsorship primitives
-- Global Hackfest 2026 organizers and community
-- Gemini API tooling used during development
+### Conflux Hackathon
 
-## Contact
+- **Conflux Network** - for dual-space architecture, Gas Sponsorship primitives, and ecosystem support
+- **Conflux Team** - for documentation and developer tooling
+- **Global Hackfest 2026 Community** - for feedback and momentum
 
-- GitHub: [@Jay-Gould7](https://github.com/Jay-Gould7)
-- Discord: `gold_xxtxx`, `vividzfc`
+### Third-Party Libraries
+
+- **[Next.js](https://nextjs.org/)** - app framework
+- **[Prisma](https://www.prisma.io/)** - database access layer
+- **[Hardhat](https://hardhat.org/)** - smart contract development and testing
+- **[Google Gemini](https://ai.google.dev/)** - survey generation and analysis
+
+## Contact & Support
+
+### Team Contact
+
+- **Discord**: `gold_xxtxx`, `vividzfc`
+- **GitHub**: [@Jay-Gould7](https://github.com/Jay-Gould7)
+
+### Project Links
+
+- **GitHub**: [https://github.com/Jay-Gould7/InsightMesh](https://github.com/Jay-Gould7/InsightMesh)
+- **Demo Video**: pending upload
+
+### Support
+
+- **Issues**: [GitHub Issues](https://github.com/Jay-Gould7/InsightMesh/issues)
+
+---
+
+**Built for Global Hackfest 2026**
