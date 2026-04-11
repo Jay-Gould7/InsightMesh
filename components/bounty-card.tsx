@@ -1,7 +1,9 @@
 "use client";
 
+import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { Clock, Coins, Users, ArrowUpRight, BarChart3, Calendar } from "lucide-react";
 
 import { StatusPill } from "@/components/status-pill";
@@ -9,12 +11,27 @@ import { formatDate, formatTokenAmount, truncateAddress } from "@/lib/utils";
 
 export function BountyCard({ bounty }: { bounty: any }) {
   const router = useRouter();
+  const detailHref = `/bounty/${bounty.id}` as Route;
+  const insightsHref = `/bounty/${bounty.id}/insights` as Route;
   const actionButtonBaseClass =
     "relative inline-flex h-[38px] w-[136px] items-center justify-center overflow-hidden rounded-full px-4 text-[15px] font-semibold outline-none transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] active:translate-y-0 active:scale-[0.985] focus-visible:ring-2";
 
+  useEffect(() => {
+    router.prefetch(detailHref);
+    router.prefetch(insightsHref);
+  }, [detailHref, insightsHref, router]);
+
   return (
     <div
-      onClick={() => router.push(`/bounty/${bounty.id}`)}
+      onClick={() => router.push(detailHref)}
+      onMouseEnter={() => {
+        router.prefetch(detailHref);
+        router.prefetch(insightsHref);
+      }}
+      onFocus={() => {
+        router.prefetch(detailHref);
+        router.prefetch(insightsHref);
+      }}
       className="group block cursor-pointer"
     >
       <article className="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-xl transition-all duration-300 group-hover:border-white/[0.14] group-hover:bg-white/[0.05] group-hover:shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
@@ -44,7 +61,8 @@ export function BountyCard({ bounty }: { bounty: any }) {
               {/* Hover: Action buttons — interaction pattern aligned with creator-links */}
               <div className="absolute inset-0 flex flex-col items-end gap-2 opacity-0 pointer-events-none transition-opacity duration-200 group-hover:opacity-100 group-hover:pointer-events-auto">
                 <Link
-                  href={`/bounty/${bounty.id}`}
+                  href={detailHref}
+                  prefetch
                   onClick={(e) => e.stopPropagation()}
                   className={`group/open ${actionButtonBaseClass} border border-lime-200/35 bg-lime-300 text-[#09120b] shadow-[0_12px_26px_rgba(163,230,53,0.18),inset_0_1px_0_rgba(255,255,255,0.22)] hover:-translate-y-0.5 hover:border-lime-100/55 hover:bg-[#d8ff68] hover:shadow-[0_18px_34px_rgba(163,230,53,0.26),0_0_36px_rgba(163,230,53,0.18),inset_0_1px_0_rgba(255,255,255,0.3)] focus-visible:ring-lime-300/55`}
                 >
@@ -67,7 +85,8 @@ export function BountyCard({ bounty }: { bounty: any }) {
                   />
                 </Link>
                 <Link
-                  href={`/bounty/${bounty.id}/insights`}
+                  href={insightsHref}
+                  prefetch
                   onClick={(e) => e.stopPropagation()}
                   className={`group/in ${actionButtonBaseClass} border border-white/10 bg-white/[0.035] text-stone-100 shadow-[0_8px_20px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.05)] hover:-translate-y-0.5 hover:border-lime-300/22 hover:bg-white/[0.055] hover:shadow-[0_14px_30px_rgba(0,0,0,0.16),inset_0_1px_0_rgba(255,255,255,0.08)] focus-visible:ring-lime-300/35`}
                 >

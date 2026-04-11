@@ -6,6 +6,7 @@ import { SurveyForm } from "@/components/survey-form";
 import { BountyDetailToolbar } from "@/components/bounty-detail-toolbar";
 import { BountyPageFlow } from "@/components/bounty-page-flow";
 import LightRays from "@/components/reactbits/LightRays";
+import { RoutePrefetcher } from "@/components/route-prefetcher";
 import { getBountyDetail } from "@/lib/db/queries";
 import { env } from "@/lib/env";
 import { formatDate } from "@/lib/utils";
@@ -32,8 +33,15 @@ export default async function BountyDetailPage({
     rewardDecimals: 6,
   } as const;
 
+  const prefetchedRoutes = [
+    `/bounty/${bounty.id}?tab=respond`,
+    `/bounty/${bounty.id}?tab=submissions`,
+    `/bounty/${bounty.id}/insights`,
+  ];
+
   return (
     <div className="relative isolate">
+      <RoutePrefetcher routes={prefetchedRoutes} />
       <div className="fixed left-0 top-0 z-0 h-[100vh] w-full pointer-events-none">
         <LightRays
           raysOrigin="top-center"

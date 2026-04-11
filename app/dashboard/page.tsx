@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Activity, CheckCircle2, MessageSquareText, Timer, Plus } from "lucide-react";
 import LightRays from "@/components/reactbits/LightRays";
+import { RoutePrefetcher } from "@/components/route-prefetcher";
 
 import { BountyCard } from "@/components/bounty-card";
 import { DashboardControls } from "@/components/dashboard-controls";
@@ -40,8 +41,14 @@ export default async function DashboardPage(props: {
     cyan:    { icon: "text-cyan-400",    bg: "bg-cyan-400/10",  glow: "shadow-cyan-400/20",    border: "border-cyan-400/20",  accent: "from-cyan-400/30" },
   } as const;
 
+  const prefetchedRoutes = [
+    "/bounty/new",
+    ...bounties.flatMap((bounty) => [`/bounty/${bounty.id}`, `/bounty/${bounty.id}/insights`]),
+  ];
+
   return (
     <>
+      <RoutePrefetcher routes={prefetchedRoutes} />
       <div className="fixed top-0 left-0 w-full h-[100vh] z-0 pointer-events-none">
         <LightRays
           raysOrigin="top-center"

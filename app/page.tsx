@@ -4,16 +4,23 @@ import { ArrowUpRight, Plus } from "lucide-react";
 import { BountyCard } from "@/components/bounty-card";
 import FaultyTerminal from "@/components/reactbits/FaultyTerminal";
 import Magnet from "@/components/reactbits/Magnet";
+import { RoutePrefetcher } from "@/components/route-prefetcher";
 import { listVisibleBounties } from "@/lib/db/queries";
 
 export default async function HomePage() {
   const { bounties } = await listVisibleBounties({ pageSize: 5 });
+  const prefetchedRoutes = [
+    "/dashboard",
+    "/bounty/new",
+    ...bounties.flatMap((bounty) => [`/bounty/${bounty.id}`, `/bounty/${bounty.id}/insights`]),
+  ];
 
   return (
     <div className="relative isolate">
+      <RoutePrefetcher routes={prefetchedRoutes} />
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-[#060906]">
         <FaultyTerminal
-          className="pointer-events-auto h-full w-full opacity-[0.78]"
+          className="pointer-events-none h-full w-full opacity-[0.78]"
           scale={1.5}
           gridMul={[2, 1]}
           digitSize={1.2}
