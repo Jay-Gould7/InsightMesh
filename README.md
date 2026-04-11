@@ -274,7 +274,15 @@ What the two private keys are used for:
   - update Core bounty status during lock, unlock, and freeze
 - `ESPACE_RELAYER_PRIVATE_KEY`
   - deploy or administer `RewardVault`
-  - execute final USDT0 settlement on eSpace
+  - execute the final USDT0 settlement transaction on eSpace
+  - this is the vault admin / relayer key in the current MVP
+
+Important settlement note:
+
+- the bounty creator does not directly broadcast `RewardVault.distribute(...)` in the current MVP
+- the creator signs approval for the frozen snapshot from the frontend
+- the backend relayer then sends the final eSpace settlement transaction
+- this is an intentional hackathon MVP tradeoff for operational simplicity, not a fully trustless settlement design
 
 ### 4. Smart Contract Deployment
 
@@ -433,6 +441,13 @@ Dedicated coverage reporting is not yet configured.
 | SubmissionRegistry | `cfxtest:acbn0bar1rbh0ntu5yumrn3d6ug96z61vufd4d7rvf` | [View on ConfluxScan](https://testnet.confluxscan.net/address/cfxtest:acbn0bar1rbh0ntu5yumrn3d6ug96z61vufd4d7rvf) |
 | RewardVault | `0xd544C0680baeDd71890fFd7BaAe7930D2425C657` | [View on ConfluxScan](https://evmtestnet.confluxscan.net/address/0xd544C0680baeDd71890fFd7BaAe7930D2425C657) |
 | USDT0 | `0x4d1beB67e8f0102d5c983c26FDf0b7C6FFF37a0c` | [View on ConfluxScan](https://evmtestnet.confluxscan.net/address/0x4d1beB67e8f0102d5c983c26FDf0b7C6FFF37a0c) |
+
+These addresses are the official hackathon demo deployment.
+
+- they are provided so judges and reviewers can inspect the live contracts and testnet activity
+- they are not intended to be reused as a drop-in production or self-hosted deployment
+- if you point your local app at the shared demo `RewardVault`, you may still fund deposits from your own wallet, but final `distribute(...)` execution remains restricted to the vault admin configured at deployment time
+- to run your own full instance, redeploy the contracts with your own Core owner / sponsor wallet and your own eSpace vault admin / relayer wallet
 
 ### Contract Interfaces
 
