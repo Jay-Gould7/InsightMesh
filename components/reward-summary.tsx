@@ -1,11 +1,24 @@
 import { truncateAddress } from "@/lib/utils";
 
-export function RewardSummary({ entries, settlementTx }: { entries: any[]; settlementTx?: string | null }) {
+export function RewardSummary({
+  entries,
+  settlementTx,
+  eyebrow = "Reward snapshot",
+  title = "Distribution overview",
+  description,
+}: {
+  entries: any[];
+  settlementTx?: string | null;
+  eyebrow?: string;
+  title?: string;
+  description?: string;
+}) {
   return (
     <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
       <div>
-        <p className="text-xs uppercase tracking-[0.35em] text-lime-300/70">Reward snapshot</p>
-        <h3 className="mt-2 text-xl font-semibold text-white">Distribution overview</h3>
+        <p className="text-xs uppercase tracking-[0.35em] text-lime-300/70">{eyebrow}</p>
+        <h3 className="mt-2 text-xl font-semibold text-white">{title}</h3>
+        {description ? <p className="mt-3 text-sm leading-7 text-stone-300">{description}</p> : null}
       </div>
       <div className="mt-6 space-y-3 text-sm text-stone-300">
         {entries.map((entry) => (

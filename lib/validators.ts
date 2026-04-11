@@ -38,6 +38,10 @@ export const creatorActionSchema = z.object({
   callerAddress: z.string().min(8),
 });
 
+export const freezeSnapshotSchema = creatorActionSchema.extend({
+  manualBlockedSubmissionIds: z.array(z.number().int().positive()).default([]),
+});
+
 export const bountyReviewActionSchema = z.object({
   callerAddress: z.string().min(8),
   action: z.enum(["lock", "unlock"]),

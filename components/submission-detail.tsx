@@ -6,26 +6,16 @@ import { ChevronDown } from "lucide-react";
 
 import type { SurveyQuestion } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
+import {
+  buildSubmissionPreviewText,
+  SubmissionDetailContent,
+  type SubmissionDetailRecord,
+} from "@/components/submission-detail-content";
 
 type SubmissionDetailProps = {
-  submission: {
-    id: number;
-    summary: string;
-    answers: Record<string, unknown>;
-    submitterCoreAddress: string;
-    payoutAddress: string;
-    createdAt: string;
-  };
+  submission: SubmissionDetailRecord;
   questions: SurveyQuestion[];
 };
-
-function stringifyAnswer(answer: unknown) {
-  if (Array.isArray(answer)) {
-    return answer.join(", ");
-  }
-
-  return String(answer ?? "").trim();
-}
 
 function truncateText(value: string, limit: number) {
   const normalized = value.replace(/\s+/g, " ").trim();
@@ -39,21 +29,9 @@ function truncateText(value: string, limit: number) {
 export function SubmissionDetail({ submission, questions }: SubmissionDetailProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const questionMap = new Map(questions.map((question) => [question.id, question]));
   const answerEntries = Object.entries(submission.answers);
   const answerCount = answerEntries.length;
-
-  const previewSource =
-    submission.summary?.trim() ||
-    answerEntries
-      .map(([questionId, answer]) => {
-        const label = questionMap.get(questionId)?.label;
-        const content = stringifyAnswer(answer);
-        if (!content) return "";
-        return label ? `${label}: ${content}` : content;
-      })
-      .find(Boolean) ||
-    "No summary";
+  const previewSource = buildSubmissionPreviewText(submission, questions);
 
   const previewText = truncateText(previewSource, 120);
 
@@ -114,54 +92,7 @@ export function SubmissionDetail({ submission, questions }: SubmissionDetailProp
             className="relative overflow-hidden"
           >
             <div className="px-5 pb-5 sm:px-6 sm:pb-6">
-              <div className="h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
-
-              <div className="mt-5 divide-y divide-white/8">
-                {answerEntries.map(([questionId, answer], index) => {
-                  const question = questionMap.get(questionId);
-                  const displayLabel = question?.label ?? questionId;
-                  const displayAnswer = stringifyAnswer(answer) || "-";
-
-                  return (
-                    <motion.div
-                      key={questionId}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{
-                        duration: 0.24,
-                        delay: Math.min(index * 0.035, 0.18),
-                        ease: [0.22, 1, 0.36, 1],
-                      }}
-                      className="py-4 first:pt-0 last:pb-0"
-                    >
-                      <p className="text-[11px] uppercase tracking-[0.25em] text-stone-500">
-                        {displayLabel}
-                      </p>
-                      <p className="mt-2 text-sm leading-7 text-stone-200 sm:text-[15px]">
-                        {displayAnswer}
-                      </p>
-                    </motion.div>
-                  );
-                })}
-              </div>
-
-              <div className="mt-5 border-t border-white/8 pt-4 text-xs text-stone-500">
-                <div className="flex flex-col gap-3">
-                  <div className="grid gap-1 md:grid-cols-[96px_minmax(0,1fr)]">
-                    <span className="uppercase tracking-[0.24em] text-stone-500">Core</span>
-                    <span className="break-all leading-6 text-stone-400">
-                      {submission.submitterCoreAddress}
-                    </span>
-                  </div>
-                  <div className="grid gap-1 md:grid-cols-[96px_minmax(0,1fr)]">
-                    <span className="uppercase tracking-[0.24em] text-stone-500">Payout</span>
-                    <span className="break-all leading-6 text-stone-400">
-                      {submission.payoutAddress}
-                    </span>
-                  </div>
-                </div>
-              </div>
+              <SubmissionDetailContent submission={submission} questions={questions} />
             </div>
           </motion.div>
         ) : null}

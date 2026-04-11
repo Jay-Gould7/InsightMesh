@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
+import { INSIGHTS_MODAL_VISIBILITY_EVENT } from "@/lib/insights-modal";
 import { INSIGHTS_ANALYSIS_EVENT, type InsightsWaveMode } from "@/lib/insights-wave";
 
 const VIEWBOX_WIDTH = 1440;
@@ -137,6 +138,7 @@ function buildWavePath(
 export function InsightsWaveOverlay() {
   const uniqueId = useId().replace(/:/g, "-");
   const [waveMode, setWaveMode] = useState<InsightsWaveMode>("idle");
+  const [hiddenForHighlightModal, setHiddenForHighlightModal] = useState(false);
   const pathRefs = useRef<Array<SVGPathElement | null>>([]);
   const opacityRefs = useRef<number[]>(waveLayers.map((layer) => layer.restOpacity));
   const amplitudeRefs = useRef<number[]>(waveLayers.map((layer) => layer.restAmplitude));
@@ -168,6 +170,19 @@ export function InsightsWaveOverlay() {
 
     return () => {
       window.removeEventListener(INSIGHTS_ANALYSIS_EVENT, handleAnalysisState as EventListener);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleHighlightModalVisibility = (event: Event) => {
+      const customEvent = event as CustomEvent<{ open?: boolean }>;
+      setHiddenForHighlightModal(Boolean(customEvent.detail?.open));
+    };
+
+    window.addEventListener(INSIGHTS_MODAL_VISIBILITY_EVENT, handleHighlightModalVisibility as EventListener);
+
+    return () => {
+      window.removeEventListener(INSIGHTS_MODAL_VISIBILITY_EVENT, handleHighlightModalVisibility as EventListener);
     };
   }, []);
 
@@ -245,11 +260,12 @@ export function InsightsWaveOverlay() {
     <motion.div
       initial={false}
       animate={{
-        opacity: waveMode === "analyzing" || waveMode === "freezing" ? 1 : 0.92,
+        opacity: hiddenForHighlightModal ? 0 : waveMode === "analyzing" || waveMode === "freezing" ? 1 : 0.92,
       }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
       className="pointer-events-none absolute inset-x-[-6%] top-[-112px] z-[90] h-[320px] overflow-visible"
       style={{
+        visibility: hiddenForHighlightModal ? "hidden" : "visible",
         filter: waveMode === "analyzing" || waveMode === "freezing"
           ? "drop-shadow(0 0 36px rgba(94,234,212,0.24))"
           : "drop-shadow(0 0 12px rgba(94,234,212,0.08))",

@@ -39,12 +39,16 @@ export type ScoreBreakdownEntry = {
   totalPoints: number;
   rewardAmount: string;
   summary: string;
+  sybilRiskLevel?: "high";
+  sybilRiskReason?: "bot_farm";
+  sybilPenaltyLabel?: string;
+  qualityMultiplier?: number;
 };
 
 export type DisqualifiedSubmission = {
   submissionId: number;
   walletAddress: string;
-  reason: "duplicate_wallet_address" | "bot_farm" | "new_wallet_nonce_zero" | "invalid_wallet_address";
+  reason: "duplicate_wallet_address" | "bot_farm" | "new_wallet_nonce_zero" | "invalid_wallet_address" | "creator_manual_block";
 };
 
 export type AnalysisPayload = {

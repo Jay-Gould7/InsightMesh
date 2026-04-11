@@ -11,6 +11,15 @@ export type SubmissionForScoring = {
 const MAX_CONSENSUS_POINTS = 20;
 const CONSENSUS_DECAY_SCALE = 3;
 
+export type ScorePenaltyConfig = {
+  qualityMultiplier?: number;
+  disableDiscovery?: boolean;
+  disableConsensus?: boolean;
+  sybilRiskLevel?: "high";
+  sybilRiskReason?: "bot_farm";
+  sybilPenaltyLabel?: string;
+};
+
 function toCents(amount: string) {
   return Math.max(0, Math.round(Number(amount || 0) * 100));
 }
@@ -45,12 +54,17 @@ export function buildScoreBreakdown(
   highlights: InsightHighlight[],
   qualityRatings: Record<number, number>,
   rewardPool: string,
+  penaltiesBySubmissionId?: Map<number, ScorePenaltyConfig>,
 ): { totalPoints: number; entries: ScoreBreakdownEntry[] } {
   // Build cluster membership map: submissionId -> clusterSize
   const clusterSizeBySubmission = new Map<number, number>();
   for (const cluster of clusters) {
+    const consensusEligibleCount = cluster.submissionIds.filter(
+      (submissionId) => !penaltiesBySubmissionId?.get(submissionId)?.disableConsensus,
+    ).length;
+
     for (const submissionId of cluster.submissionIds) {
-      clusterSizeBySubmission.set(submissionId, cluster.count);
+      clusterSizeBySubmission.set(submissionId, consensusEligibleCount);
     }
   }
 
@@ -58,19 +72,22 @@ export function buildScoreBreakdown(
   const highlightMap = new Map(highlights.map((h) => [h.submissionId, h]));
 
   const baseEntries = submissions.map((submission) => {
+    const penalty = penaltiesBySubmissionId?.get(submission.id);
+
     // Pillar 1: Base Participation (fixed)
     const participationPts = 10;
 
     // Pillar 2: AI Quality Score (LLM qualityRating * 8)
     const rating = qualityRatings[submission.id] ?? 2;
-    const qualityPts = Math.max(1, Math.min(5, Math.round(rating))) * 8;
+    const baseQualityPts = Math.max(1, Math.min(5, Math.round(rating))) * 8;
+    const qualityPts = Math.max(0, Math.round(baseQualityPts * (penalty?.qualityMultiplier ?? 1)));
 
     // Pillar 3: Discovery Bonus (earliest in cluster)
-    const discoveryBonus = highlightMap.get(submission.id)?.bonusPoints ?? 0;
+    const discoveryBonus = penalty?.disableDiscovery ? 0 : highlightMap.get(submission.id)?.bonusPoints ?? 0;
 
     // Pillar 4: Semantic Consensus Bonus with diminishing marginal returns
     const clusterSize = clusterSizeBySubmission.get(submission.id) ?? 1;
-    const consensusBonus = computeConsensusBonus(clusterSize);
+    const consensusBonus = penalty?.disableConsensus ? 0 : computeConsensusBonus(clusterSize);
 
     const totalPoints = participationPts + qualityPts + discoveryBonus + consensusBonus;
 
@@ -85,6 +102,10 @@ export function buildScoreBreakdown(
       totalPoints,
       rewardAmount: "0.00",
       summary: submission.summary,
+      sybilRiskLevel: penalty?.sybilRiskLevel,
+      sybilRiskReason: penalty?.sybilRiskReason,
+      sybilPenaltyLabel: penalty?.sybilPenaltyLabel,
+      qualityMultiplier: penalty?.qualityMultiplier,
     } satisfies ScoreBreakdownEntry;
   });
 

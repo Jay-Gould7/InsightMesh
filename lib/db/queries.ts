@@ -15,31 +15,67 @@ function parseJson<T>(value: string | null | undefined, fallback: T): T {
 function hydrateBounty(bounty: any): any {
   if (!bounty) return bounty;
 
-  return {
-    ...bounty,
-    questions: typeof bounty.questions === "string" ? parseJson<SurveyQuestion[]>(bounty.questions, []) : bounty.questions,
-    submissions: Array.isArray(bounty.submissions)
-      ? bounty.submissions.map((submission: any) => ({
+  const hydratedSubmissions = Array.isArray(bounty.submissions)
+    ? bounty.submissions.map((submission: any) => ({
         ...submission,
-        answers: typeof submission.answers === "string" ? parseJson<Record<string, unknown>>(submission.answers, {}) : submission.answers,
+        answers:
+          typeof submission.answers === "string"
+            ? parseJson<Record<string, unknown>>(submission.answers, {})
+            : submission.answers,
       }))
-      : bounty.submissions,
-    analysis: bounty.analysis
-      ? {
+    : bounty.submissions;
+
+  const submissionById = new Map<number, any>(
+    (hydratedSubmissions ?? []).map((submission: any) => [submission.id, submission]),
+  );
+
+  const parsedAnalysis = bounty.analysis
+    ? {
         ...bounty.analysis,
         clusters: typeof bounty.analysis.clusters === "string" ? parseJson<AnalysisCluster[]>(bounty.analysis.clusters, []) : bounty.analysis.clusters,
         duplicates: typeof bounty.analysis.duplicates === "string" ? parseJson<number[][]>(bounty.analysis.duplicates, []) : bounty.analysis.duplicates,
         highlights: typeof bounty.analysis.highlights === "string" ? parseJson<InsightHighlight[]>(bounty.analysis.highlights, []) : bounty.analysis.highlights,
-        scoreBreakdown: typeof bounty.analysis.scoreBreakdown === "string" ? parseJson<ScoreBreakdownEntry[]>(bounty.analysis.scoreBreakdown, []) : bounty.analysis.scoreBreakdown,
+        scoreBreakdown: (
+          typeof bounty.analysis.scoreBreakdown === "string"
+            ? parseJson<ScoreBreakdownEntry[]>(bounty.analysis.scoreBreakdown, [])
+            : Array.isArray(bounty.analysis.scoreBreakdown)
+              ? bounty.analysis.scoreBreakdown
+              : []
+        ).map((entry: any) => ({
+            ...entry,
+            submission: submissionById.get(entry.submissionId)
+              ? {
+                  summary: submissionById.get(entry.submissionId).summary,
+                  answers: submissionById.get(entry.submissionId).answers,
+                  createdAt: submissionById.get(entry.submissionId).createdAt,
+                  payoutAddress: submissionById.get(entry.submissionId).payoutAddress,
+                  submitterCoreAddress: submissionById.get(entry.submissionId).submitterCoreAddress,
+                }
+              : null,
+          })),
         disqualified: typeof bounty.analysis.disqualified === "string" ? parseJson<DisqualifiedSubmission[]>(bounty.analysis.disqualified, []) : bounty.analysis.disqualified,
       }
-      : bounty.analysis,
+    : bounty.analysis;
+
+  const scoreBreakdownBySubmissionId = new Map<number, ScoreBreakdownEntry>(
+    (parsedAnalysis?.scoreBreakdown ?? []).map((entry: ScoreBreakdownEntry) => [entry.submissionId, entry]),
+  );
+
+  return {
+    ...bounty,
+    questions: typeof bounty.questions === "string" ? parseJson<SurveyQuestion[]>(bounty.questions, []) : bounty.questions,
+    submissions: hydratedSubmissions,
+    analysis: parsedAnalysis,
     scoreSnapshot: bounty.scoreSnapshot
       ? {
         ...bounty.scoreSnapshot,
         entries: Array.isArray(bounty.scoreSnapshot.entries)
           ? bounty.scoreSnapshot.entries.map((entry: any) => ({
             ...entry,
+            sybilRiskLevel: scoreBreakdownBySubmissionId.get(entry.submissionId)?.sybilRiskLevel,
+            sybilRiskReason: scoreBreakdownBySubmissionId.get(entry.submissionId)?.sybilRiskReason,
+            sybilPenaltyLabel: scoreBreakdownBySubmissionId.get(entry.submissionId)?.sybilPenaltyLabel,
+            qualityMultiplier: scoreBreakdownBySubmissionId.get(entry.submissionId)?.qualityMultiplier,
             submission: entry.submission
               ? {
                 ...entry.submission,
@@ -264,6 +300,7 @@ export async function saveAnalysisPreview(
     highlights: InsightHighlight[];
     scoreBreakdown: ScoreBreakdownEntry[];
     disqualified?: DisqualifiedSubmission[];
+    aiModel?: string;
   },
 ) {
   await prisma.analysis.upsert({
@@ -275,7 +312,7 @@ export async function saveAnalysisPreview(
       highlights: JSON.stringify(payload.highlights),
       scoreBreakdown: JSON.stringify(payload.scoreBreakdown),
       disqualified: JSON.stringify(payload.disqualified ?? []),
-      aiModel: "gemini-2.5-flash",
+      aiModel: payload.aiModel ?? "gemini-2.5-flash",
       snapshotKey: null,
     },
     update: {
@@ -284,7 +321,7 @@ export async function saveAnalysisPreview(
       highlights: JSON.stringify(payload.highlights),
       scoreBreakdown: JSON.stringify(payload.scoreBreakdown),
       disqualified: JSON.stringify(payload.disqualified ?? []),
-      aiModel: "gemini-2.5-flash",
+      aiModel: payload.aiModel ?? "gemini-2.5-flash",
       snapshotKey: null,
     },
   });
@@ -299,7 +336,7 @@ export async function saveAnalysisPreview(
 
 export async function saveAnalysis(
   bountyId: number,
-  payload: { clusters: AnalysisCluster[]; duplicates: number[][]; highlights: InsightHighlight[]; scoreBreakdown: ScoreBreakdownEntry[]; disqualified?: DisqualifiedSubmission[]; snapshotKey?: string },
+  payload: { clusters: AnalysisCluster[]; duplicates: number[][]; highlights: InsightHighlight[]; scoreBreakdown: ScoreBreakdownEntry[]; disqualified?: DisqualifiedSubmission[]; snapshotKey?: string; aiModel?: string },
 ) {
   await prisma.analysis.upsert({
     where: { bountyId },
@@ -310,7 +347,7 @@ export async function saveAnalysis(
       highlights: JSON.stringify(payload.highlights),
       scoreBreakdown: JSON.stringify(payload.scoreBreakdown),
       disqualified: JSON.stringify(payload.disqualified ?? []),
-      aiModel: "gemini-2.5-flash",
+      aiModel: payload.aiModel ?? "gemini-2.5-flash",
       snapshotKey: payload.snapshotKey,
     },
     update: {
@@ -319,7 +356,7 @@ export async function saveAnalysis(
       highlights: JSON.stringify(payload.highlights),
       scoreBreakdown: JSON.stringify(payload.scoreBreakdown),
       disqualified: JSON.stringify(payload.disqualified ?? []),
-      aiModel: "gemini-2.5-flash",
+      aiModel: payload.aiModel ?? "gemini-2.5-flash",
       snapshotKey: payload.snapshotKey,
     },
   });

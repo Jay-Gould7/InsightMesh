@@ -4,33 +4,55 @@ import { useRouter } from "next/navigation";
 import { startTransition, useEffect, useState } from "react";
 
 import { useFluentWallet } from "@/components/providers/fluent-provider";
-import { INSIGHTS_PREVIEW_EVENT, type InsightsPreviewPayload } from "@/lib/insights-preview";
+import { INSIGHTS_MANUAL_BLOCK_EVENT, INSIGHTS_PREVIEW_EVENT, type InsightsManualBlockPayload, type InsightsPreviewPayload } from "@/lib/insights-preview";
 import { INSIGHTS_ANALYSIS_EVENT, MIN_INSIGHTS_ANALYSIS_WAVE_MS, type InsightsWaveMode } from "@/lib/insights-wave";
 import type { AnalysisPayload } from "@/lib/types";
 
-export function InsightActions({ bountyId, status }: { bountyId: number; status: string }) {
+export function InsightActions({
+  bountyId,
+  status,
+  initialPreviewReady = false,
+}: {
+  bountyId: number;
+  status: string;
+  initialPreviewReady?: boolean;
+}) {
   const router = useRouter();
   const { address } = useFluentWallet();
   const [reviewStatus, setReviewStatus] = useState(status);
   const [preview, setPreview] = useState<AnalysisPayload | null>(null);
+  const [persistedPreviewReady, setPersistedPreviewReady] = useState(initialPreviewReady);
   const [error, setError] = useState("");
   const [isLocking, setIsLocking] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isFreezing, setIsFreezing] = useState(false);
+  const [manualBlockedSubmissionIds, setManualBlockedSubmissionIds] = useState<number[]>([]);
   const isFrozen = reviewStatus === "READY_TO_SETTLE";
   const isSettled = reviewStatus === "SETTLED";
   const isLocked = reviewStatus === "ANALYZING";
   const actionsLocked = isFrozen || isSettled;
-  const hasPreview = preview !== null;
+  const hasPreview = preview !== null || (isLocked && persistedPreviewReady);
 
   useEffect(() => {
     setReviewStatus(status);
+    setPersistedPreviewReady(status === "ANALYZING" ? initialPreviewReady : false);
     if (status !== "ANALYZING") {
       setPreview(null);
+      setManualBlockedSubmissionIds([]);
       emitPreviewState(null);
     }
-  }, [status]);
+  }, [initialPreviewReady, status]);
+
+  useEffect(() => {
+    function handleManualBlocks(event: Event) {
+      const customEvent = event as CustomEvent<InsightsManualBlockPayload>;
+      setManualBlockedSubmissionIds(customEvent.detail?.blockedSubmissionIds ?? []);
+    }
+
+    window.addEventListener(INSIGHTS_MANUAL_BLOCK_EVENT, handleManualBlocks as EventListener);
+    return () => window.removeEventListener(INSIGHTS_MANUAL_BLOCK_EVENT, handleManualBlocks as EventListener);
+  }, []);
 
   function emitWaveState(mode: InsightsWaveMode) {
     if (typeof window === "undefined") {
@@ -76,9 +98,12 @@ export function InsightActions({ bountyId, status }: { bountyId: number; status:
 
       if (action === "lock") {
         setReviewStatus("ANALYZING");
+        setPersistedPreviewReady(false);
       } else {
         setReviewStatus("ACTIVE");
+        setPersistedPreviewReady(false);
         setPreview(null);
+        setManualBlockedSubmissionIds([]);
         emitPreviewState(null);
       }
     } catch (reviewError) {
@@ -117,6 +142,8 @@ export function InsightActions({ bountyId, status }: { bountyId: number; status:
       }
 
       setPreview(payload as AnalysisPayload);
+      setPersistedPreviewReady(true);
+      setManualBlockedSubmissionIds([]);
       emitPreviewState({
         clusters: payload.clusters ?? [],
         highlights: payload.highlights ?? [],
@@ -152,7 +179,7 @@ export function InsightActions({ bountyId, status }: { bountyId: number; status:
       const response = await fetch("/api/ai/score", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bountyId, callerAddress: address }),
+        body: JSON.stringify({ bountyId, callerAddress: address, manualBlockedSubmissionIds }),
       });
       const payload = await response.json();
 
@@ -162,6 +189,7 @@ export function InsightActions({ bountyId, status }: { bountyId: number; status:
       }
 
       setReviewStatus("READY_TO_SETTLE");
+      setPersistedPreviewReady(false);
       setPreview(null);
       emitPreviewState(null);
       startTransition(() => router.refresh());

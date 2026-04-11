@@ -1,52 +1,38 @@
 "use client";
 
-import { useState } from "react";
-import { ShieldAlert, ChevronDown, ChevronUp, ShieldCheck } from "lucide-react";
+import { ShieldAlert, ShieldCheck } from "lucide-react";
 import type { DisqualifiedSubmission } from "@/lib/types";
 
 export function AntiSybilPanel({ disqualified }: { disqualified: DisqualifiedSubmission[] }) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  if (!disqualified || disqualified.length === 0) {
-    return (
-      <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-lime-400/10 text-lime-400">
-          <ShieldCheck className="h-5 w-5" />
-        </div>
-        <div>
-          <p className="font-medium text-white">Network Secure</p>
-          <p className="text-sm text-stone-400">No sybil or bot attacks detected in this cohort.</p>
-        </div>
-      </div>
-    );
-  }
+  const hasEntries = Boolean(disqualified?.length);
 
   return (
-    <div className="rounded-3xl border border-rose-500/20 bg-rose-500/5 backdrop-blur-xl overflow-hidden transition-all duration-300">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-6 text-left hover:bg-white/5 transition-colors"
-      >
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-500/20 text-rose-400">
-            <ShieldAlert className="h-6 w-6" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-rose-200">
-              Anti-Sybil Wall Blocked {disqualified.length} Threat{disqualified.length > 1 ? "s" : ""}
-            </h3>
-            <p className="text-sm text-stone-400 mt-1">
-              These submissions were automatically disqualified to protect the reward pool.
-            </p>
-          </div>
+    <div className="flex h-[28rem] flex-col overflow-hidden rounded-3xl border border-rose-500/20 bg-rose-500/5 backdrop-blur-xl transition-all duration-300">
+      <div className="flex items-center gap-4 border-b border-white/8 px-6 py-6">
+        <div
+          className={`flex h-12 w-12 items-center justify-center rounded-full ${
+            hasEntries ? "bg-rose-500/20 text-rose-400" : "bg-lime-400/10 text-lime-300"
+          }`}
+        >
+          {hasEntries ? <ShieldAlert className="h-6 w-6" /> : <ShieldCheck className="h-6 w-6" />}
         </div>
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-stone-300">
-          {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+        <div>
+          <h3 className={`text-lg font-semibold ${hasEntries ? "text-rose-200" : "text-lime-200"}`}>
+            {hasEntries
+              ? `Anti-Sybil Wall Blocked ${disqualified.length} Threat${disqualified.length > 1 ? "s" : ""}`
+              : "Anti-Sybil Wall"}
+          </h3>
+          <p className="mt-1 text-sm text-stone-400">
+            {hasEntries
+              ? "These submissions were automatically disqualified to protect the reward pool."
+              : "No sybil or bot attacks detected in this cohort."}
+          </p>
         </div>
-      </button>
+      </div>
 
-      {isOpen && (
-        <div className="px-6 pb-6 pt-2 border-t border-rose-500/10">
+      <div className="min-h-0 flex-1 px-6 py-4">
+        {hasEntries ? (
+          <div className="h-full overflow-y-auto overscroll-contain pr-1">
           <div className="grid gap-3">
             {disqualified.map((item, idx) => (
               <div key={idx} className="flex items-center justify-between rounded-xl bg-black/20 p-4 border border-rose-500/10">
@@ -59,6 +45,8 @@ export function AntiSybilPanel({ disqualified }: { disqualified: DisqualifiedSub
                       ? "Zero Transaction History (Nonce 0)"
                       : item.reason === "duplicate_wallet_address"
                       ? "Multiple Submissions from Single Identity"
+                      : item.reason === "creator_manual_block"
+                      ? "Creator Excluded High-Risk Submission"
                       : item.reason === "bot_farm"
                       ? "AI Detected Coordinated Bot Farming"
                       : "Invalid Identity Status"}
@@ -70,8 +58,19 @@ export function AntiSybilPanel({ disqualified }: { disqualified: DisqualifiedSub
               </div>
             ))}
           </div>
-        </div>
-      )}
+          </div>
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-lime-300/16 bg-lime-400/10 text-lime-300 shadow-[0_0_32px_rgba(163,230,53,0.08)]">
+              <ShieldCheck className="h-8 w-8" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-base font-medium text-white">Network secure</p>
+              <p className="text-sm text-stone-400">No blocked identities in the current preview.</p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

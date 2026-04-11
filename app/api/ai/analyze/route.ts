@@ -53,6 +53,7 @@ export async function POST(request: Request) {
       highlights: result.highlights,
       scoreBreakdown: result.scoreBreakdown,
       disqualified: result.disqualified,
+      aiModel: result.aiModel,
     });
 
     return Response.json(result);

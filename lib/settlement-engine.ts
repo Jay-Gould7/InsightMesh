@@ -1,16 +1,19 @@
-import { buildScoreBreakdown, type SubmissionForScoring } from "@/lib/ai/scorer";
-import { requestGeminiJson } from "@/lib/ai/client";
+import { buildScoreBreakdown, type ScorePenaltyConfig, type SubmissionForScoring } from "@/lib/ai/scorer";
+import { requestAiJson } from "@/lib/ai/client";
 import { getESpacePublicClient } from "@/lib/conflux/espace-client";
 import type { AnalysisCluster, InsightHighlight, ScoreBreakdownEntry } from "@/lib/types";
 import { getAddress, isAddress, type Address } from "viem";
 
 const DISCOVERY_BONUS_POINTS = 12;
 const AI_RETRY_MESSAGE = "AI analysis failed. Please retry.";
+const BOT_FARM_QUALITY_MULTIPLIER = 0.25;
+const BOT_FARM_PENALTY_LABEL = "High Sybil Risk · quality -75%, discovery/consensus disabled";
 
 export type SettlementEngineInput = {
   title: string;
   prompt: string;
   totalUsdtReward: number | string;
+  blockedSubmissionIds?: number[];
   submissions: Array<{
     id: number;
     walletAddress: string;
@@ -47,7 +50,8 @@ type DisqualificationReason =
   | "duplicate_wallet_address"
   | "bot_farm"
   | "new_wallet_nonce_zero"
-  | "invalid_wallet_address";
+  | "invalid_wallet_address"
+  | "creator_manual_block";
 
 export type DisqualifiedSubmission = {
   submissionId: number;
@@ -66,6 +70,7 @@ export type SettlementEngineResult = {
   totalPoints: number;
   eligibleSubmissionIds: number[];
   disqualified: DisqualifiedSubmission[];
+  aiModel: string;
 };
 
 const GEMINI_SYSTEM_INSTRUCTION = `
@@ -110,6 +115,10 @@ Important:
 
 function failAiAnalysis(): never {
   throw new Error(AI_RETRY_MESSAGE);
+}
+
+function joinAiModels(models: Array<string | undefined>) {
+  return [...new Set(models.map((model) => model?.trim()).filter((model): model is string => Boolean(model)))].join(" + ");
 }
 
 function normalizeText(value: string) {
@@ -161,12 +170,12 @@ function compareBySubmittedAt(left: NormalizedSubmission, right: NormalizedSubmi
   return left.id - right.id;
 }
 
-async function evaluateSubmissionsWithGemini(
+async function evaluateSubmissionsWithAi(
   title: string,
   prompt: string,
   submissions: NormalizedSubmission[],
 ) {
-  const evaluations = await requestGeminiJson<GeminiEvaluation[]>(
+  const response = await requestAiJson<GeminiEvaluation[]>(
     GEMINI_SYSTEM_INSTRUCTION,
     JSON.stringify({
       title,
@@ -180,7 +189,7 @@ async function evaluateSubmissionsWithGemini(
     }),
   );
 
-  const sanitized = (evaluations ?? []).filter(
+  const sanitized = (response?.data ?? []).filter(
     (item) =>
       typeof item?.submissionId === "number" &&
       typeof item?.clusterId === "string",
@@ -190,7 +199,10 @@ async function evaluateSubmissionsWithGemini(
     failAiAnalysis();
   }
 
-  return sanitized;
+  return {
+    evaluations: sanitized,
+    aiModel: response?.label ?? "",
+  };
 }
 
 async function generateClusterNarratives(
@@ -204,10 +216,13 @@ async function generateClusterNarratives(
   }>,
 ) {
   if (clusters.length === 0) {
-    return [] as GeminiClusterNarrative[];
+    return {
+      narratives: [] as GeminiClusterNarrative[],
+      aiModel: "",
+    };
   }
 
-  const narratives = await requestGeminiJson<GeminiClusterNarrative[]>(
+  const response = await requestAiJson<GeminiClusterNarrative[]>(
     GEMINI_CLUSTER_NARRATIVE_INSTRUCTION,
     JSON.stringify({
       title,
@@ -216,7 +231,7 @@ async function generateClusterNarratives(
     }),
   );
 
-  const sanitized = (narratives ?? []).filter(
+  const sanitized = (response?.data ?? []).filter(
     (item) =>
       typeof item?.clusterId === "string" &&
       typeof item?.theme === "string" &&
@@ -227,13 +242,16 @@ async function generateClusterNarratives(
     failAiAnalysis();
   }
 
-  return sanitized.map((item) => ({
-    clusterId: sanitizeClusterId(item.clusterId, item.clusterId),
-    theme: item.theme.trim(),
-    summary: truncateText(item.summary.trim(), 180),
-    highlightTitle: item.highlightTitle?.trim(),
-    highlightReason: item.highlightReason?.trim(),
-  }));
+  return {
+    narratives: sanitized.map((item) => ({
+      clusterId: sanitizeClusterId(item.clusterId, item.clusterId),
+      theme: item.theme.trim(),
+      summary: truncateText(item.summary.trim(), 180),
+      highlightTitle: item.highlightTitle?.trim(),
+      highlightReason: item.highlightReason?.trim(),
+    })),
+    aiModel: response?.label ?? "",
+  };
 }
 
 function sanitizeEvaluations(
@@ -368,19 +386,18 @@ async function buildClusterArtifacts(
     };
   });
 
+  const narrativeResult = await generateClusterNarratives(
+    title,
+    prompt,
+    groupedEntries.map((entry) => ({
+      clusterId: entry.clusterId,
+      submissionCount: entry.ordered.length,
+      earliestSubmission: entry.ordered[0]?.content ?? "",
+      representativeTexts: entry.signal,
+    })),
+  );
   const narrativeMap = new Map(
-    (
-      await generateClusterNarratives(
-        title,
-        prompt,
-        groupedEntries.map((entry) => ({
-          clusterId: entry.clusterId,
-          submissionCount: entry.ordered.length,
-          earliestSubmission: entry.ordered[0]?.content ?? "",
-          representativeTexts: entry.signal,
-        })),
-      )
-    ).map((item) => [sanitizeClusterId(item.clusterId, item.clusterId), item]),
+    narrativeResult.narratives.map((item) => [sanitizeClusterId(item.clusterId, item.clusterId), item]),
   );
 
   const clusters = groupedEntries.map(({ clusterId, ordered, signal }) => {
@@ -402,6 +419,7 @@ async function buildClusterArtifacts(
   return {
     clusters,
     narrativeMap,
+    aiModel: narrativeResult.aiModel,
   };
 }
 
@@ -409,16 +427,28 @@ function buildHighlights(
   clusters: AnalysisCluster[],
   submissions: NormalizedSubmission[],
   clusterNarratives?: Map<string, GeminiClusterNarrative>,
+  highRiskSubmissionIds?: Set<number>,
 ): InsightHighlight[] {
   const bySubmissionId = new Map(submissions.map((submission) => [submission.id, submission]));
 
   return clusters.flatMap((cluster) => {
-    const earliest = cluster.submissionIds
+    const orderedCandidates = cluster.submissionIds
       .map((submissionId) => bySubmissionId.get(submissionId))
-      .filter((submission): submission is NormalizedSubmission => Boolean(submission))
-      .sort(compareBySubmittedAt)[0];
+      .filter(
+        (submission): submission is NormalizedSubmission => {
+          if (!submission) {
+            return false;
+          }
 
-    if (!earliest) {
+          return true;
+        },
+      )
+      .sort(compareBySubmittedAt);
+
+    const earliestEligible = orderedCandidates.find((submission) => !highRiskSubmissionIds?.has(submission.id));
+    const highlightedSubmission = earliestEligible ?? orderedCandidates[0];
+
+    if (!highlightedSubmission) {
       return [];
     }
 
@@ -427,12 +457,16 @@ function buildHighlights(
       failAiAnalysis();
     }
 
+    const isHighRisk = highRiskSubmissionIds?.has(highlightedSubmission.id) ?? false;
+
     return [{
-      submissionId: earliest.id,
+      submissionId: highlightedSubmission.id,
       title: narrative.highlightTitle || cluster.theme,
-      reason: narrative.highlightReason || `This is the earliest eligible and clearly expressed submission in the "${cluster.theme}" cluster.`,
+      reason: isHighRisk
+        ? `${narrative.highlightReason || `This is the earliest clearly expressed submission in the "${cluster.theme}" cluster.`} Discovery bonus was withheld because this submission was flagged as high sybil risk.`
+        : narrative.highlightReason || `This is the earliest eligible and clearly expressed submission in the "${cluster.theme}" cluster.`,
       bonusType: "discovery",
-      bonusPoints: DISCOVERY_BONUS_POINTS,
+      bonusPoints: isHighRisk ? 0 : DISCOVERY_BONUS_POINTS,
     } satisfies InsightHighlight];
   });
 }
@@ -451,9 +485,10 @@ export async function runSettlementEngine(
     .sort(compareBySubmittedAt);
 
   const duplicateGroups = buildDuplicateGroups(submissions);
+  const evaluationResult = await evaluateSubmissionsWithAi(input.title, input.prompt, submissions);
   const geminiEvaluations = sanitizeEvaluations(
     submissions,
-    await evaluateSubmissionsWithGemini(input.title, input.prompt, submissions),
+    evaluationResult.evaluations,
   );
   const evaluationBySubmissionId = new Map(
     geminiEvaluations.map((evaluation) => [evaluation.submissionId, evaluation]),
@@ -462,10 +497,12 @@ export async function runSettlementEngine(
   const qualityRatings = Object.fromEntries(
     geminiEvaluations.map((evaluation) => [evaluation.submissionId, evaluation.qualityRating]),
   ) as Record<number, number>;
+  const manuallyBlockedSubmissionIds = new Set(input.blockedSubmissionIds ?? []);
 
   const firstSubmissionByWallet = new Map<string, number>();
   const eligibleSubmissions: NormalizedSubmission[] = [];
   const disqualified: DisqualifiedSubmission[] = [];
+  const botFarmSubmissionIds = new Set<number>();
 
   for (const submission of submissions) {
     const walletKey = isAddress(submission.walletAddress)
@@ -484,16 +521,6 @@ export async function runSettlementEngine(
       continue;
     }
 
-    const evaluation = evaluationBySubmissionId.get(submission.id);
-    if (evaluation?.isBotFarm) {
-      disqualified.push({
-        submissionId: submission.id,
-        walletAddress: submission.walletAddress,
-        reason: "bot_farm",
-      });
-      continue;
-    }
-
     const walletStatus = walletStatuses.get(walletKey);
     if (!walletStatus?.isEligible) {
       disqualified.push({
@@ -508,15 +535,29 @@ export async function runSettlementEngine(
       ...submission,
       walletAddress: walletStatus.canonicalAddress,
     });
+
+    const evaluation = evaluationBySubmissionId.get(submission.id);
+    if (evaluation?.isBotFarm) {
+      if (manuallyBlockedSubmissionIds.has(submission.id)) {
+        disqualified.push({
+          submissionId: submission.id,
+          walletAddress: submission.walletAddress,
+          reason: "creator_manual_block",
+        });
+        continue;
+      }
+
+      botFarmSubmissionIds.add(submission.id);
+    }
   }
 
-  const { clusters, narrativeMap } = await buildClusterArtifacts(
+  const { clusters, narrativeMap, aiModel: narrativeAiModel } = await buildClusterArtifacts(
     input.title,
     input.prompt,
     eligibleSubmissions,
     evaluationBySubmissionId,
   );
-  const highlights = buildHighlights(clusters, eligibleSubmissions, narrativeMap);
+  const highlights = buildHighlights(clusters, eligibleSubmissions, narrativeMap, botFarmSubmissionIds);
 
   const scoringInput: SubmissionForScoring[] = eligibleSubmissions.map((submission) => ({
     id: submission.id,
@@ -525,6 +566,22 @@ export async function runSettlementEngine(
     summary: submission.content,
     createdAt: submission.submittedAt,
   }));
+  const penaltiesBySubmissionId = new Map<number, ScorePenaltyConfig>();
+
+  for (const submission of eligibleSubmissions) {
+    if (!botFarmSubmissionIds.has(submission.id)) {
+      continue;
+    }
+
+    penaltiesBySubmissionId.set(submission.id, {
+      qualityMultiplier: BOT_FARM_QUALITY_MULTIPLIER,
+      disableDiscovery: true,
+      disableConsensus: true,
+      sybilRiskLevel: "high",
+      sybilRiskReason: "bot_farm",
+      sybilPenaltyLabel: BOT_FARM_PENALTY_LABEL,
+    });
+  }
 
   const scoring = buildScoreBreakdown(
     scoringInput,
@@ -532,6 +589,7 @@ export async function runSettlementEngine(
     highlights,
     qualityRatings,
     toRewardPoolString(input.totalUsdtReward),
+    penaltiesBySubmissionId,
   );
 
   const recipients = scoring.entries
@@ -552,5 +610,6 @@ export async function runSettlementEngine(
     totalPoints: scoring.totalPoints,
     eligibleSubmissionIds: eligibleSubmissions.map((submission) => submission.id),
     disqualified,
+    aiModel: joinAiModels([evaluationResult.aiModel, narrativeAiModel]),
   };
 }

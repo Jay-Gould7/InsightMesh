@@ -1,7 +1,18 @@
 const truthy = new Set(["1", "true", "yes", "on"]);
 
+type AiProviderMode = "auto" | "gemini" | "siliconflow";
+
 function read(name: string, fallback = "") {
   return process.env[name] ?? fallback;
+}
+
+function normalizeAiProviderMode(value: string): AiProviderMode {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "gemini" || normalized === "siliconflow") {
+    return normalized;
+  }
+
+  return "auto";
 }
 
 function normalizePrivateKey(value: string) {
@@ -12,8 +23,11 @@ function normalizePrivateKey(value: string) {
 export const env = {
   appName: read("NEXT_PUBLIC_APP_NAME", "InsightMesh"),
   demoMode: truthy.has(read("NEXT_PUBLIC_DEMO_MODE", "true").toLowerCase()),
+  aiProviderMode: normalizeAiProviderMode(read("AI_PROVIDER_MODE", "auto")),
   geminiApiKey: read("GEMINI_API_KEY"),
   geminiModel: read("GEMINI_MODEL", "gemini-2.5-flash"),
+  siliconFlowApiKey: read("SILICONFLOW_API_KEY"),
+  siliconFlowModel: read("SILICONFLOW_MODEL", "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"),
   databaseUrl: read("DATABASE_URL", "file:./dev.db"),
   coreRpcUrl: read("CONFLUX_CORE_RPC_URL", "https://test.confluxrpc.com"),
   coreNetworkId: Number(read("CONFLUX_CORE_NETWORK_ID", "1")),
@@ -29,6 +43,10 @@ export const env = {
 
 export function hasGeminiAccess() {
   return Boolean(env.geminiApiKey);
+}
+
+export function hasSiliconFlowAccess() {
+  return Boolean(env.siliconFlowApiKey && env.siliconFlowModel);
 }
 
 export function hasCoreContractConfig() {

@@ -5,7 +5,7 @@ import { getBountyDetail, saveAnalysis, saveScoreSnapshot } from "@/lib/db/queri
 import { fakeSnapshotKey } from "@/lib/demo";
 import { env, hasCoreChainAccess } from "@/lib/env";
 import { runSettlementEngine } from "@/lib/settlement-engine";
-import { creatorActionSchema } from "@/lib/validators";
+import { freezeSnapshotSchema } from "@/lib/validators";
 
 class NoEligibleSubmissionsError extends Error {
   constructor(public readonly disqualified: unknown) {
@@ -16,7 +16,7 @@ class NoEligibleSubmissionsError extends Error {
 export async function POST(request: Request) {
   try {
     const json = await request.json();
-    const payload = creatorActionSchema.parse(json);
+    const payload = freezeSnapshotSchema.parse(json);
     const bounty = await getBountyDetail(payload.bountyId);
 
     if (!bounty) {
@@ -52,6 +52,7 @@ export async function POST(request: Request) {
         title: bounty.title,
         prompt: bounty.prompt,
         totalUsdtReward: bounty.rewardAmount,
+        blockedSubmissionIds: payload.manualBlockedSubmissionIds,
         submissions: bounty.submissions.map((submission: any) => ({
           id: submission.id,
           walletAddress: submission.payoutAddress,
@@ -80,6 +81,7 @@ export async function POST(request: Request) {
         scoreBreakdown: engine.scoreBreakdown,
         disqualified: engine.disqualified,
         snapshotKey,
+        aiModel: engine.aiModel,
       });
       await saveScoreSnapshot({
         bountyId: bounty.id,
