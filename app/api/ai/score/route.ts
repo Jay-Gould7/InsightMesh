@@ -4,7 +4,12 @@ import { coreAddressesEqual } from "@/lib/conflux/address";
 import { getBountyDetail, saveAnalysis, saveScoreSnapshot } from "@/lib/db/queries";
 import { fakeSnapshotKey } from "@/lib/demo";
 import { env, hasCoreChainAccess } from "@/lib/env";
-import { runSettlementEngine } from "@/lib/settlement-engine";
+import {
+  createManualBlockDisqualifications,
+  mergeDisqualifiedSubmissions,
+  redistributeScoreBreakdown,
+  sanitizeScoreBreakdownEntry,
+} from "@/lib/score-breakdown";
 import { freezeSnapshotSchema } from "@/lib/validators";
 
 class NoEligibleSubmissionsError extends Error {
@@ -48,22 +53,29 @@ export async function POST(request: Request) {
     }
 
     try {
-      const engine = await runSettlementEngine({
-        title: bounty.title,
-        prompt: bounty.prompt,
-        totalUsdtReward: bounty.rewardAmount,
-        blockedSubmissionIds: payload.manualBlockedSubmissionIds,
-        submissions: bounty.submissions.map((submission: any) => ({
-          id: submission.id,
-          walletAddress: submission.payoutAddress,
-          submitterCoreAddress: submission.submitterCoreAddress,
-          content: submission.summary ?? JSON.stringify(submission.answers),
-          submittedAt: submission.createdAt,
-        })),
-      });
+      if (!bounty.analysis || bounty.analysisStatus !== "COMPLETED") {
+        return apiError("Run AI analysis before freezing the snapshot.", 409);
+      }
 
-      if (engine.scoreBreakdown.length === 0 || engine.recipients.length === 0) {
-        throw new NoEligibleSubmissionsError(engine.disqualified);
+      const scoreBreakdown = Array.isArray(bounty.analysis.scoreBreakdown)
+        ? bounty.analysis.scoreBreakdown.map(sanitizeScoreBreakdownEntry)
+        : [];
+      if (scoreBreakdown.length === 0) {
+        return apiError("Run AI analysis before freezing the snapshot.", 409);
+      }
+
+      const blockedSubmissionIds = new Set(payload.manualBlockedSubmissionIds ?? []);
+      const blockedEntries = scoreBreakdown.filter((entry: any) => blockedSubmissionIds.has(entry.submissionId));
+      const activeEntries = scoreBreakdown.filter((entry: any) => !blockedSubmissionIds.has(entry.submissionId));
+
+      const disqualified = mergeDisqualifiedSubmissions(
+        Array.isArray(bounty.analysis.disqualified) ? bounty.analysis.disqualified : [],
+        createManualBlockDisqualifications(blockedEntries),
+      );
+
+      const finalScoreBreakdown = redistributeScoreBreakdown(activeEntries, bounty.rewardAmount);
+      if (finalScoreBreakdown.entries.length === 0) {
+        throw new NoEligibleSubmissionsError(disqualified);
       }
 
       if (typeof bounty.chainBountyId === "number") {
@@ -75,35 +87,37 @@ export async function POST(request: Request) {
 
       const snapshotKey = fakeSnapshotKey();
       await saveAnalysis(bounty.id, {
-        clusters: engine.clusters,
-        duplicates: engine.duplicates,
-        highlights: engine.highlights,
-        scoreBreakdown: engine.scoreBreakdown,
-        disqualified: engine.disqualified,
+        clusters: bounty.analysis.clusters ?? [],
+        duplicates: bounty.analysis.duplicates ?? [],
+        highlights: bounty.analysis.highlights ?? [],
+        scoreBreakdown: finalScoreBreakdown.entries.map(sanitizeScoreBreakdownEntry),
+        disqualified,
         snapshotKey,
-        aiModel: engine.aiModel,
+        aiModel: bounty.analysis.aiModel,
       });
       await saveScoreSnapshot({
         bountyId: bounty.id,
         snapshotKey,
         rewardPool: bounty.rewardAmount,
-        totalPoints: engine.totalPoints,
+        totalPoints: finalScoreBreakdown.totalPoints,
         createdBy: bounty.creatorEspaceAddress,
-        entries: engine.scoreBreakdown,
+        entries: finalScoreBreakdown.entries.map(sanitizeScoreBreakdownEntry),
       });
+
+      const rewardEntries = finalScoreBreakdown.entries.filter((entry) => Number(entry.rewardAmount ?? "0") > 0);
 
       return Response.json({
         snapshotKey,
-        totalPoints: engine.totalPoints,
-        clusters: engine.clusters,
-        duplicates: engine.duplicates,
-        highlights: engine.highlights,
-        qualityRatings: engine.qualityRatings,
-        scoreBreakdown: engine.scoreBreakdown,
-        recipients: engine.recipients,
-        rewardAmounts: engine.rewardAmounts,
-        eligibleSubmissionIds: engine.eligibleSubmissionIds,
-        disqualified: engine.disqualified,
+        totalPoints: finalScoreBreakdown.totalPoints,
+        clusters: bounty.analysis.clusters ?? [],
+        duplicates: bounty.analysis.duplicates ?? [],
+        highlights: bounty.analysis.highlights ?? [],
+        qualityRatings: {},
+        scoreBreakdown: finalScoreBreakdown.entries.map(sanitizeScoreBreakdownEntry),
+        recipients: rewardEntries.map((entry) => entry.payoutAddress),
+        rewardAmounts: rewardEntries.map((entry) => entry.rewardAmount),
+        eligibleSubmissionIds: finalScoreBreakdown.entries.map((entry) => entry.submissionId),
+        disqualified,
       });
     } catch (error) {
       if (error instanceof NoEligibleSubmissionsError) {

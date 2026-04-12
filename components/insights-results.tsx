@@ -16,6 +16,7 @@ import {
   INSIGHTS_PREVIEW_EVENT,
   type InsightsPreviewPayload,
 } from "@/lib/insights-preview";
+import { buildPreviewScoreBreakdown } from "@/lib/score-breakdown";
 import type {
   AnalysisCluster,
   DisqualifiedSubmission,
@@ -33,54 +34,6 @@ type ScoreEntryLike = ScoreBreakdownEntry & {
     createdAt?: string;
   } | null;
 };
-
-function toCents(amount: string | null | undefined) {
-  return Math.max(0, Math.round(Number(amount || 0) * 100));
-}
-
-function fromCents(value: number) {
-  return (value / 100).toFixed(2);
-}
-
-function recalculatePreviewRewards(entries: ScoreEntryLike[], blockedSubmissionIds: number[]) {
-  const blockedSet = new Set(blockedSubmissionIds);
-  const activeEntries = entries
-    .filter((entry) => !blockedSet.has(entry.submissionId))
-    .map((entry) => ({ ...entry }));
-  const blockedEntries = entries
-    .filter((entry) => blockedSet.has(entry.submissionId))
-    .map((entry) => ({ ...entry, rewardAmount: "0.00", rank: null }));
-
-  const rewardPoolCents = entries.reduce((sum, entry) => sum + toCents(entry.rewardAmount), 0);
-  const totalPoints = activeEntries.reduce((sum, entry) => sum + Math.max(0, entry.totalPoints ?? 0), 0);
-
-  if (activeEntries.length === 0 || rewardPoolCents === 0 || totalPoints === 0) {
-    return [
-      ...activeEntries.map((entry, index) => ({ ...entry, rewardAmount: "0.00", rank: index + 1 })),
-      ...blockedEntries,
-    ];
-  }
-
-  const ranked = [...activeEntries].sort((a, b) => b.totalPoints - a.totalPoints || a.submissionId - b.submissionId);
-  let distributed = 0;
-
-  for (const entry of ranked) {
-    const cents = Math.floor((rewardPoolCents * entry.totalPoints) / totalPoints);
-    entry.rewardAmount = fromCents(cents);
-    distributed += cents;
-  }
-
-  let remainder = rewardPoolCents - distributed;
-  let index = 0;
-  while (remainder > 0 && ranked.length > 0) {
-    const current = ranked[index % ranked.length];
-    current.rewardAmount = fromCents(toCents(current.rewardAmount) + 1);
-    remainder -= 1;
-    index += 1;
-  }
-
-  return [...ranked.map((entry, rank) => ({ ...entry, rank: rank + 1 })), ...blockedEntries];
-}
 
 function findScrollableAncestor(start: EventTarget | null, boundary: HTMLElement | null) {
   let current = start instanceof HTMLElement ? start : null;
@@ -243,7 +196,7 @@ export function InsightsResults({
     [scoreBreakdown],
   );
   const estimatedEntries = useMemo(
-    () => recalculatePreviewRewards(scoreBreakdown, manualBlockedSubmissionIds),
+    () => buildPreviewScoreBreakdown(scoreBreakdown, manualBlockedSubmissionIds),
     [manualBlockedSubmissionIds, scoreBreakdown],
   );
 
