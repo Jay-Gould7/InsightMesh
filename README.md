@@ -421,7 +421,7 @@ Dedicated coverage reporting is not yet configured.
 
 ### Demo Video
 
-- **YouTube**: [InsightMesh | Global Hackfest 2026 Submission](https://youtu.be/X0tG1cErkXA?si=-gH86x_XECDbJpEd)
+- **YouTube**: [InsightMesh | Global Hackfest 2026 Submission](https://youtu.be/oSJx-vxCimE?si=da_0N-vuDqgart5J)
 - **Duration**: 4:45
 
 ### Screenshots
@@ -604,7 +604,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Project Links
 
 - **GitHub**: [https://github.com/Jay-Gould7/InsightMesh](https://github.com/Jay-Gould7/InsightMesh)
-- **Demo Video**: [InsightMesh | Global Hackfest 2026 Submission](https://youtu.be/X0tG1cErkXA?si=-gH86x_XECDbJpEd)
+- **Demo Video**: [InsightMesh | Global Hackfest 2026 Submission](https://youtu.be/oSJx-vxCimE?si=da_0N-vuDqgart5J)
 
 ### Support
 
