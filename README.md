@@ -202,6 +202,7 @@ Conflux eSpace
   |- RewardVault
   |- USDT0 deposit and distribution
 ```
+![alt text](demo.png)
 
 **High-level architecture description:**
 
@@ -420,8 +421,8 @@ Dedicated coverage reporting is not yet configured.
 
 ### Demo Video
 
-- **YouTube**: pending upload
-- **Duration**: pending upload
+- **YouTube**: [pending upload](https://youtu.be/X0tG1cErkXA?si=-gH86x_XECDbJpEd)
+- **Duration**: 4:45
 
 ### Screenshots
 
@@ -600,7 +601,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Project Links
 
 - **GitHub**: [https://github.com/Jay-Gould7/InsightMesh](https://github.com/Jay-Gould7/InsightMesh)
-- **Demo Video**: pending upload
+- **Demo Video**: [pending upload](https://youtu.be/X0tG1cErkXA?si=-gH86x_XECDbJpEd)
 
 ### Support
 

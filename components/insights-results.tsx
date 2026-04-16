@@ -328,7 +328,7 @@ export function InsightsResults({
 
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
             {hasVisibleInsights ? (
-              <div className="relative z-10 mt-3 space-y-6 overflow-visible">
+              <div className="relative z-[80] mt-3 space-y-6 overflow-visible">
                 {clusters.length > 0 ? <ClusterChart clusters={clusters} /> : null}
 
                 <InsightHighlightsCarousel highlights={highlights} questions={questions} entries={scoreBreakdown} />

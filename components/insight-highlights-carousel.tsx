@@ -258,6 +258,7 @@ export function InsightHighlightsCarousel({
 }) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const pointerIdRef = useRef<number | null>(null);
+  const captureTargetRef = useRef<Element | null>(null);
   const dragStartXRef = useRef(0);
   const dragOffsetRef = useRef(0);
   const blockClickRef = useRef(false);
@@ -343,10 +344,15 @@ export function InsightHighlightsCarousel({
   }, [highlights.length, loopEnabled]);
 
   function releasePointer(event: ReactPointerEvent<HTMLDivElement>) {
-    if (pointerIdRef.current !== null && event.currentTarget.hasPointerCapture(pointerIdRef.current)) {
-      event.currentTarget.releasePointerCapture(pointerIdRef.current);
+    if (pointerIdRef.current !== null && captureTargetRef.current?.hasPointerCapture?.(pointerIdRef.current)) {
+      try {
+        captureTargetRef.current.releasePointerCapture(pointerIdRef.current);
+      } catch (e) {
+        // Ignored
+      }
     }
     pointerIdRef.current = null;
+    captureTargetRef.current = null;
   }
 
   function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
@@ -360,7 +366,14 @@ export function InsightHighlightsCarousel({
     blockClickRef.current = false;
     setIsDragging(true);
     setTransitionEnabled(false);
-    event.currentTarget.setPointerCapture(event.pointerId);
+    
+    const target = event.target as Element;
+    captureTargetRef.current = target;
+    if (typeof target.setPointerCapture === "function") {
+      target.setPointerCapture(event.pointerId);
+    } else {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
   }
 
   function handlePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
