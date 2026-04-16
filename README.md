@@ -421,14 +421,17 @@ Dedicated coverage reporting is not yet configured.
 
 ### Demo Video
 
-- **YouTube**: [pending upload](https://youtu.be/X0tG1cErkXA?si=-gH86x_XECDbJpEd)
+- **YouTube**: [InsightMesh | Global Hackfest 2026 Submission](https://youtu.be/X0tG1cErkXA?si=-gH86x_XECDbJpEd)
 - **Duration**: 4:45
 
 ### Screenshots
 
-- Main Interface: pending submission assets
-- Insights Page: pending submission assets
-- Settlement Flow: pending submission assets
+- Main Interface: <img width="2500" height="1413" alt="image" src="https://github.com/user-attachments/assets/aed0e112-c77d-45a6-8592-e0429df7b6cc" />
+
+ - Create Bounty Page: <img width="2495" height="1408" alt="image" src="https://github.com/user-attachments/assets/fdaf5718-905d-40e5-8456-e6c01d216b5f" />
+
+- Insights Page: <img width="2496" height="1414" alt="image" src="https://github.com/user-attachments/assets/85103ec8-e776-49cd-9606-9fe0279eabf5" />
+
 
 ## Smart Contracts
 
@@ -601,7 +604,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Project Links
 
 - **GitHub**: [https://github.com/Jay-Gould7/InsightMesh](https://github.com/Jay-Gould7/InsightMesh)
-- **Demo Video**: [pending upload](https://youtu.be/X0tG1cErkXA?si=-gH86x_XECDbJpEd)
+- **Demo Video**: [InsightMesh | Global Hackfest 2026 Submission](https://youtu.be/X0tG1cErkXA?si=-gH86x_XECDbJpEd)
 
 ### Support
 
