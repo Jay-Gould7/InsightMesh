@@ -414,11 +414,6 @@ Dedicated coverage reporting is not yet configured.
 
 ## Demo
 
-### Live Demo
-
-- **URL**: local demo / hackathon walkthrough build
-- **Test Account**: not provided publicly
-
 ### Demo Video
 
 - **YouTube**: [InsightMesh | Global Hackfest 2026 Submission](https://youtu.be/oSJx-vxCimE?si=da_0N-vuDqgart5J)
