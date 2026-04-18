@@ -1,4 +1,4 @@
-# InsightMesh
+<img width="2788" height="1536" alt="demo" src="https://github.com/user-attachments/assets/20fe9e0c-799d-40f6-ae4f-1f60d2604d9c" /># InsightMesh
 
 AI-native on-chain feedback bounties on Conflux.
 
@@ -202,7 +202,7 @@ Conflux eSpace
   |- RewardVault
   |- USDT0 deposit and distribution
 ```
-![alt text](demo.png)
+<img width="2788" height="1536" alt="demo" src="https://github.com/user-attachments/assets/0be46b42-ca06-42a4-812d-403acfaa009d" />
 
 **High-level architecture description:**
 
@@ -594,7 +594,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Team Contact
 
 - **Discord**: `gold_xxtxx`, `vividzfc`
-- **GitHub**: [@Jay-Gould7](https://github.com/Jay-Gould7)
+- **GitHub**: [@Jay-Gould7](https://github.com/Jay-Gould7),[@wkarry450-max](https://github.com/wkarry450-max)
 
 ### Project Links
 
