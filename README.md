@@ -1,4 +1,4 @@
-<img width="2788" height="1536" alt="demo" src="https://github.com/user-attachments/assets/20fe9e0c-799d-40f6-ae4f-1f60d2604d9c" /># InsightMesh
+
 
 AI-native on-chain feedback bounties on Conflux.
 
